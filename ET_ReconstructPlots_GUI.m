@@ -36,11 +36,13 @@ if nargin == 1
 end
 
 %% Initialize figure
-figure_handle = figure('Position',[100,100,1000,500],...
-    'Name','ET Reconstruct Plots',...
-    'Resize','Off',...
+figure_handle = figure('Name','ET Reconstruct Plots',...
+    'Resize','On',...
     'CloseRequestFcn',@closefigure_call);
 h = guihandles(figure_handle);
+
+h.slider_width = 20;                                        %set slider width here
+[h.x_dim_max,h.y_dim_max]=maximize_figure(figure_handle);   %"true" figure maximize
 
 %% Load in data structure S if it is passed as an input argument
 if nargin == 1
@@ -48,10 +50,47 @@ if nargin == 1
     h.S = S;
 end
 
-%% Set-up axes
-h.ax(1) = axes('Parent',gcf,...
+%% Set-up parent panel
+h.pn_parent = uipanel('Parent',figure_handle,...
     'Units','Pixels',...
-    'Position',[60 295 500 180]);
+    'Position',[0 h.slider_width h.x_dim_max-h.slider_width h.y_dim_max-h.slider_width]); 
+
+%% Set-up panel sliders
+h.corner_box = uicontrol('Style','Text',...
+    'Parent',figure_handle,...
+    'Units','Pixels',...
+    'Position',[figure_handle.Position(3)-h.slider_width+2,0,h.slider_width,h.slider_width],...
+    'BackgroundColor',[0.9 0.9 0.9]);
+
+h.sl_horizontal = uicontrol('Style','Slider',...
+    'Parent',figure_handle,...
+    'BackgroundColor',[0.8 0.8 0.8],...
+    'Value',0,...
+    'Min',0,...
+    'Max',1,...
+    'SliderStep',[1, 1],...
+    'Units','Pixels',...
+    'Position',[0, 0, h.x_dim_max-h.slider_width+2, h.slider_width],...
+    'Callback',@sliderrelease_call,...
+    'Tag','horizontal');
+h.sl_horizontal_listener = addlistener(h.sl_horizontal,'Value','PreSet',@sliderlistener_call);
+h.sl_vertical = uicontrol('Style','Slider',...
+    'Parent',figure_handle,...
+    'BackgroundColor',[0.8 0.8 0.8],...
+    'Value',0,...
+    'Min',0,...
+    'Max',1,...
+    'SliderStep',[1, 1],...
+    'Units','Pixels',...
+    'Position',[h.x_dim_max-h.slider_width+2, h.slider_width, h.slider_width, h.y_dim_max-h.slider_width],...
+    'Callback',@sliderrelease_call,...
+    'Tag','vertical');
+h.sl_vertical_listener = addlistener(h.sl_vertical,'Value','PreSet',@sliderlistener_call);
+
+%% Set-up axes
+h.ax(1) = axes('Parent',h.pn_parent,...
+    'Units','Pixels',...
+    'Position',[60 figure_handle.Position(4)-340 figure_handle.Position(3)-600 figure_handle.Position(4)-460]);
 h.ax(1).XLabel.String = 'Time (Seconds)';
 h.ax(1).YLabel.String = 'Unknown Units';
 h.ax(1).Title.String = 'Velocity Plot';
@@ -60,9 +99,9 @@ h.ax(1).YLabel.FontSize = 8;
 h.ax(1).Title.FontSize = 10;
 h.ax(1).FontSize = 8;
 
-h.ax(2) = axes('Parent',gcf,...
+h.ax(2) = axes('Parent',h.pn_parent,...
     'Units','Pixels',...
-    'Position',[60 50 500 180]);
+    'Position',[60 figure_handle.Position(4)-700 figure_handle.Position(3)-600 figure_handle.Position(4)-460]);
 h.ax(2).XLabel.String = 'Time (Seconds)';
 h.ax(2).YLabel.String = 'Unknown Units';
 h.ax(2).Title.String = 'Pupil Plot';
@@ -106,10 +145,11 @@ h.pl(7) = line('Color', [0.8 0.3 0],...
     'Visible','Off');
 
 %% Set-up Load Data Panel
-h.pn1 = uipanel('Parent',figure_handle,...
+h.pn1 = uipanel('Parent',h.pn_parent,...
+    'Units','Pixels',...
     'Title','Load Data',...
     'FontSize',10,...
-    'Position',[0.58 0.85 0.4 0.15]);
+    'Position',[h.pn_parent.Position(3)-500, h.pn_parent.Position(4)-120, 490, 100]);
 h.pn(1).pb(1) = uicontrol('Style','PushButton',...
     'Parent',h.pn1,...
     'Units','Normalized',...
@@ -119,12 +159,13 @@ h.pn(1).pb(1) = uicontrol('Style','PushButton',...
     'String','Select Data',...
     'Tooltip','Select the variable that stores your data structure',...
     'Callback',@selectdata_call);
-h.pn(1).tx(1) = uicontrol('Style','Text',...
-    'BackgroundColor',[0.8 0.8 0.8],...
+h.pn(1).ed(2) = uicontrol('Style','Edit',...
+    'BackgroundColor',[1 1 1],...
     'Parent',h.pn1,...
     'Units','Normalized',...
     'HorizontalAlignment','Left',...
     'FontSize',10,...
+    'Enable','off',...
     'Position',[0.27 0.35 0.42 0.36]);
 h.pn(1).ed(1) = uicontrol('Style','Edit',...
     'Parent',h.pn1,...
@@ -141,10 +182,11 @@ h.pn(1).tx(2) = uicontrol('Style','Text',...
     'String','Index');
 
 %% Set-up Display Plots Panel
-h.pn2 = uipanel('Parent',figure_handle,...
+h.pn2 = uipanel('Parent',h.pn_parent,...
+    'Units','Pixels',...
     'Title','Display Plots',...
     'FontSize',10,...
-    'Position',[0.58 0.55 0.4 0.3]);
+    'Position',[h.pn_parent.Position(3)-500, h.pn_parent.Position(4)-310, 490, 180]);
 %Left Side
 h.pn(2).tx(1) = uicontrol('Style','Text',...
     'Parent',h.pn2,...
@@ -263,10 +305,11 @@ h.pn(2).tx(9) = uicontrol('Style','Text',...
 
 %% Set-up Filter Parameters
 %Velocity Pos/Neg Threshold, Hanning window, precision, resample rate
-h.pn3 = uipanel('Parent',figure_handle,...
+h.pn3 = uipanel('Parent',h.pn_parent,...
+    'Units','Pixels',...
     'Title','Filter Parameters',...
     'FontSize',10,...
-    'Position',[0.58 0.25 0.4 0.3]);
+    'Position',[h.pn_parent.Position(3)-500, h.pn_parent.Position(4)-560, 490, 250]);
 h.pn(3).tx(1) = uicontrol('Style','Text',...
     'Parent',h.pn3,...
     'Units','Normalized',...
@@ -348,9 +391,10 @@ h.pn(3).pb(2) = uicontrol('Style','PushButton',...
     'String','Undo');
 
 %% Set-up PushButtons Panel
-h.pn4 = uipanel('Parent',figure_handle,...
+h.pn4 = uipanel('Parent',h.pn_parent,...
+    'Units','Pixels',...
     'FontSize',10,...
-    'Position',[0.58 0.02 0.4 0.21]);
+    'Position',[h.pn_parent.Position(3)-500, h.pn_parent.Position(4)-720, 490, 150]);
 h.pn(4).pb(1) = uicontrol('Style','PushButton',...
     'Parent',h.pn4,...
     'Units','Normalized',...
@@ -386,6 +430,8 @@ h.pn(4).pb(5) = uicontrol('Style','PushButton',...
     'FontSize',10,...
     'Position',[0.6 0.06 0.2 0.24],...
     'String','Save');
+
+set(figure_handle,'SizeChangedFcn',@resizefigure_call)
 
 %% Finished setting up GUI elements; Now assign GUI start-up settings
 h.sub_num = 1;
@@ -492,6 +538,81 @@ while h.repeat
 end
 end
 %% Callback Functions (Figure):
+function [] = resizefigure_call(varargin)
+    h = guidata(gcbo);
+    figure_handle = gcf;
+    
+    %Restrict figure size (x dimensions)
+    h.sl_horizontal.SliderStep = [1/20, 1/20];
+    if figure_handle.Position(3) >= h.pn_parent.Position(3)
+        figure_handle.Position(3) = h.pn_parent.Position(3)+h.slider_width;
+        h.sl_horizontal.SliderStep = [0, 0];
+    end
+    
+    %Adjust horizontal slider
+    h.sl_horizontal.Max = h.pn_parent.Position(3)-(figure_handle.Position(3)-h.slider_width);
+    h.sl_horizontal.Position(3) = figure_handle.Position(3)-h.slider_width+2;
+    
+    if -h.pn_parent.Position(1) < h.sl_horizontal.Min
+        h.sl_horizontal.Value = h.sl_horizontal.Min;
+        h.pn_parent.Position(1) = -h.sl_horizontal.Min;
+    elseif -h.pn_parent.Position(1) > h.sl_horizontal.Max
+        h.sl_horizontal.Value = h.sl_horizontal.Max;
+        h.pn_parent.Position(1) = -h.sl_horizontal.Max;
+    else
+        h.sl_horizontal.Value = -h.pn_parent.Position(1);
+    end
+    
+    %Restrict figure size (y dimensions)
+    h.sl_vertical.SliderStep = [1/20, 1/20];
+    if figure_handle.Position(4) >= h.pn_parent.Position(4)
+        figure_handle.Position(4) = h.pn_parent.Position(4)+h.slider_width;
+        h.sl_vertical.SliderStep = [0, 0];
+    end
+    
+    %Adjust vertical slider
+    h.sl_vertical.Min = -h.slider_width;
+    h.sl_vertical.Max = h.pn_parent.Position(4)-figure_handle.Position(4);
+    h.sl_vertical.Position = [figure_handle.Position(3)-h.slider_width+2, h.slider_width, h.slider_width, figure_handle.Position(4)-h.slider_width];
+    
+    if -h.pn_parent.Position(2) < h.sl_vertical.Min
+        h.sl_vertical.Value = h.sl_vertical.Min;
+        h.pn_parent.Position(2) = -h.sl_vertical.Min;
+    elseif -h.pn_parent.Position(2) > h.sl_vertical.Max
+        h.sl_vertical.Value = h.sl_vertical.Max;
+        h.pn_parent.Position(2) = -h.sl_vertical.Max;
+    else
+        h.sl_vertical.Value = -h.pn_parent.Position(2);
+    end
+    
+    %Adjust corner box
+    h.corner_box.Position = [figure_handle.Position(3)-h.slider_width+2,0,h.slider_width,h.slider_width];
+    
+    guidata(gcbo,h);
+end
+
+function [] = sliderrelease_call(varargin)
+    cb_obj = gcbo;
+    slideraction(cb_obj);
+end
+
+function [] = sliderlistener_call(varargin)
+    event = varargin{2};
+    slideraction(event.AffectedObject);
+end
+
+function [] = slideraction(hObj)
+    h=guidata(hObj);
+    
+    switch(hObj.Tag)
+        case 'horizontal'
+            h.pn_parent.Position(1) = -h.sl_horizontal.Value;
+        case 'vertical'
+            h.pn_parent.Position(2) = -h.sl_vertical.Value;
+    end
+    guidata(hObj,h);
+end
+
 function [] = closefigure_call(varargin)
     h = guidata(gcbo);
     
@@ -520,10 +641,10 @@ end
 function [] = changeindex_call(varargin)
     h = guidata(gcbo);
     
-    edit_value = str2double(h.pn(1).ed(2).String);
+    edit_value = str2double(h.pn(1).ed(1).String);
     if mod(edit_value,1) == 0
     %if user input an integer
-        if edit_value > 0 && edit_value < numel(h.S)
+        if edit_value > 0 && edit_value <= numel(h.S)
             h.sub_num = edit_value;
         elseif edit_value < 0
             h.sub_num = 1;
@@ -556,13 +677,17 @@ function [] = selectdata_call(varargin)
          end
      end
      
-     [name, folder] = uigetfile('*.mat');    
+     if isfield(h,'file') && isfield(h.file,'name') && isfield(h.file,'folder')
+        [name, folder] = uigetfile('*.mat','Select File',[h.file.name]);
+     else
+        [name, folder] = uigetfile('*.mat','Select File');
+     end
      
      if ischar(name) && ischar(folder)
          %if user selected an actual file (instead of just canceling)
          h.file.name = name;
          h.file.folder = folder;
-         h.pn(1).tx(1).String = name;
+         h.pn(1).ed(2).String = name;
          h.saved = 1;
          load(fullfile(folder,name));       %loads variable S
          h.S = S;                           %assign S to h.S
@@ -718,7 +843,7 @@ end
 function h = savedata(h)
 %updates edit box in panel 1 to display file name;
 %saves current state of data structure in a user-selected file as variable S
-    h.pn(1).tx(1).String = h.file.name;
+    h.pn(1).ed(2).String = h.file.name;
     S = h.S;
     save(fullfile(h.file.folder,h.file.name),'S');
     h.saved = 1;
@@ -760,4 +885,19 @@ function h = skip_or_run(h)
         case 'Run'
             h.S = ET_RemoveArtifacts_Auto(h.S,h.S(h.sub_num).filter_config);
     end
+end
+
+function [x_pixels,y_pixels] = maximize_figure(handle)
+%maximizes figure using JavaFrame property of the figure handle
+%returns the x and y dimensions of the figure
+
+    warning('off')
+    drawnow;                        %avoids Java Error
+    jFig = handle.JavaFrame;
+    jFig.setMaximized(true);    
+    warning('on')
+    pause(0.2)                      %let figure resize first
+    x_pixels = handle.Position(3);
+    y_pixels = handle.Position(4);
+    
 end
