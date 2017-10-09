@@ -229,10 +229,15 @@ function [] = resizefigure_call(varargin)
     h2 = guidata(gcbo);
     figure_handle2 = gcf;
     
+    try
     h2.ax.Position = [60 60 figure_handle2.Position(3)-390 figure_handle2.Position(4)-100];
     h2.pn1.Position = [figure_handle2.Position(3)-300 figure_handle2.Position(4)-160 280 140];
     h2.pn2.Position = [figure_handle2.Position(3)-300 figure_handle2.Position(4)-350 280 180];
     h2.pn3.Position = [figure_handle2.Position(3)-300 figure_handle2.Position(4)-485 280 120];
+    catch
+        %returns if user resizes figure to a dimension that is too small
+    end
+    
     guidata(gcbo,h2);
 end
 

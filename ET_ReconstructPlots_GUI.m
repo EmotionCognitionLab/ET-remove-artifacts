@@ -499,48 +499,12 @@ end
 end
 %% Callback Functions (Figure):
 function [] = resizefigure_call(varargin)
-%1) resizes figure if dimensions are too small (btw... there must be a better
-%way to restrict figure size!!)
-%2) resizes GUI elements
+%resizes gui elements when user resizes figure
 
     h = guidata(gcbo);
     figure_handle = gcf;
     
-    %retrieve monitor info
-    monitor_positions = get(0,'MonitorPositions');
-    monitor_index = find(figure_handle.Position(1)>monitor_positions(:,1)&figure_handle.Position(1)<monitor_positions(:,3)+monitor_positions(:,1));
-    
-
-    try
-        set(figure_handle,'SizeChangedFcn','');
-        pause(0.2);     %pause to switch off SizeChangedFcn before changing size
-        
-        %restrict figure x dimensions
-        if figure_handle.Position(3) < 900
-            figure_handle.Position(3) = 901;
-            if figure_handle.Position(3) + figure_handle.Position(1) > monitor_positions(1,3)
-                %restrict figure height to be within the monitor height that
-                %figure is currently located
-                figure_handle.Position(3) = monitor_positions(1,3)-figure_handle.Position(3);
-            end
-        end
-        
-        %restrict figure y dimensions
-        if figure_handle.Position(4) < 550
-            figure_handle.Position(4) = 551;
-            if figure_handle.Position(4) + figure_handle.Position(2) > monitor_positions(monitor_index,4)
-            %restrict figure height to be within the monitor height that
-            %figure is currently located
-                figure_handle.Position(2) = monitor_positions(monitor_index,4)-figure_handle.Position(4)-80;
-            end
-        end
-        
-        pause(0.2);     %pause to finish changing size before switching on SizeChangedFcn
-        
-        h=resize_gui_elements(h,figure_handle);
-    catch
-        %return if user tries to resize before figure is drawn
-    end
+    h=resize_gui_elements(h,figure_handle);
     
     set(figure_handle,'SizeChangedFcn',@resizefigure_call);
     guidata(gcbo,h);
@@ -549,6 +513,7 @@ end
 function h = resize_gui_elements(h,figure_handle)
 %resizes the elements according to figure dimensions
     
+    try
     %Adjust axes positions
     h.ax(1).Position = [75 0.5*figure_handle.Position(4)+50 figure_handle.Position(3)-570 0.5*figure_handle.Position(4)-80];
     h.ax(2).Position = [75 50 figure_handle.Position(3)-570 0.5*figure_handle.Position(4)-80];
@@ -558,7 +523,10 @@ function h = resize_gui_elements(h,figure_handle)
     h.pn2.Position = [figure_handle.Position(3)-460, figure_handle.Position(4)-250, 450, 160];
     h.pn3.Position = [figure_handle.Position(3)-460, figure_handle.Position(4)-410, 450, 160];
     h.pn4.Position = [figure_handle.Position(3)-460, figure_handle.Position(4)-540, 450, 120];
-    
+    catch
+    %returns if user resizes figure to dimensions that are too small
+    end
+
 end
 
 function [] = closefigure_call(varargin)
