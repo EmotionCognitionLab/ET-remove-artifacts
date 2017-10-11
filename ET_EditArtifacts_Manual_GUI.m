@@ -12,10 +12,12 @@ function figure_handle2 = ET_EditArtifacts_Manual_GUI(h1)
 %"parent" function before the handle to this figure is deleted
 %
 %Author: Ringo Huang (ringohua@usc.edu)
+narginchk(1,1);
 
 figure_handle2 = figure('Position',[100,100,800,500],...
     'Name','Artifact Reconstruction',...
     'WindowStyle','Modal',...
+    'WindowKeyPressFcn',@keypress_call,...
     'CloseRequestFcn',@closefigure_call);
 set(figure_handle2,'SizeChangedFcn',@resizefigure_call)
 h2 = guihandles(figure_handle2);
@@ -223,7 +225,37 @@ uiwait(figure_handle2);
 end
 
 %% Callback Functions
-
+function [] = keypress_call(varargin)
+    h2 = guidata(gcf);
+    key_data = varargin{2};
+    
+    switch key_data.Key
+        case 'a'
+            change = -1;
+            h2 = UpdateXAxis(h2,change);
+        case 'd'
+            change = 1;
+            h2 = UpdateXAxis(h2,change);
+        case 's'
+            change = -1;
+            h2 = UpdateYAxis(h2,change);
+        case 'w'
+            change = 1;
+            h2 = UpdateYAxis(h2,change);
+        case 'q'
+            h2 = SelectStart(h2);
+        case 'e'
+            h2 = SelectEnd(h2);
+        case 'z'
+            h2 = EditPlot(h2,'Interpolate');
+        case 'x'
+            h2 = EditPlot(h2,'Re-populate');
+        case 'c'
+            h2 = EditPlot(h2,'NaN Data');
+            
+    end
+    guidata(gcf, h2);
+end
 function [] = resizefigure_call(varargin)
 %Plot expands as figure enlarges
     h2 = guidata(gcbo);
@@ -387,34 +419,50 @@ function [] = selectpoint_call(varargin)
 %% Selects endpoints
     h2=guidata(gcbo);
     cb_obj = gcbo;
-
-    %Select data using ginput cursor (WIP: restrict cursor to axes only)
-    [x,y] = ginput(1);
-    [x,y] = SnapToData([x,y], h2.reconstructed.smp_timestamp, ...
-        h2.reconstructed.sample);
-
-    %Update the appropriate fields and plot
+    
+    %Select start/end point on plot and updates the appropriate edit boxes
     switch cb_obj.String
         case 'Select Start'
-            h2.pl(3).XData = x;
-            h2.pl(3).YData = y;
-            h2.pn(2).ed(1).String = num2str(x);
+            h2 = SelectStart(h2);
         case 'Select End'
-            h2.pl(4).XData = x;
-            h2.pl(4).YData = y;
-            h2.pn(2).ed(2).String = num2str(x);
+            h2 = SelectEnd(h2);
     end
   
     guidata(gcbo,h2);
 end
 
 function [] = ploteditor_call(varargin)
-%% Makes changes to the plot
+%% Callback for the different pushbuttons (4 options for editing the plot)
     h2 = guidata(gcbo);
     cb_obj = gcbo;
-    
+    action = cb_obj.String;
+    h2 = EditPlot(h2,action);
+    guidata(gcbo,h2);
+end
+
+%% Functions:
+function h2 = SelectStart(h2)
+%Select data using ginput cursor (WIP: restrict cursor to axes only)
+[x,y] = ginput(1);
+[x,y] = SnapToData([x,y], h2.reconstructed.smp_timestamp, ...
+    h2.reconstructed.sample);
+h2.pl(3).XData = x;
+h2.pl(3).YData = y;
+h2.pn(2).ed(1).String = num2str(x);
+end
+function h2 = SelectEnd(h2)
+%Select data using ginput cursor (WIP: restrict cursor to axes only)
+[x,y] = ginput(1);
+[x,y] = SnapToData([x,y], h2.reconstructed.smp_timestamp, ...
+    h2.reconstructed.sample);
+h2.pl(4).XData = x;
+h2.pl(4).YData = y;
+h2.pn(2).ed(2).String = num2str(x);
+end
+function h2 = EditPlot(h2,action)
+%% Makes changes to the plot depending on the action
     %Before making changes, save the state of the current plot
-    if ~strcmp(cb_obj.String,'Undo')
+    if ~strcmp(action,'Undo')
         h2.data.sample_temp = h2.reconstructed.sample;
         h2.data.smp_timestamp_temp = h2.reconstructed.smp_timestamp;
     end
@@ -428,7 +476,7 @@ function [] = ploteditor_call(varargin)
         return
     end
     
-    switch cb_obj.String
+    switch action
         case 'Interpolate'
             t2 = start_index;  %t2 is the smaller of the two endpoints
             t3 = end_index;  %t3 is the larger of the two endpoints
@@ -452,11 +500,42 @@ function [] = ploteditor_call(varargin)
     
     %Replot new data
     h2.pl(2).YData = h2.reconstructed.sample;
-    guidata(gcbo,h2);
 end
 
+function h2 = UpdateXAxis(h2,change)
+%% Updates the x axes
+
+% Update x axis
+h2.ax.XLim = h2.ax.XLim + change;
+% Update x tick
+increment = h2.ax.XTick(2)-h2.ax.XTick(1);
+if h2.ax.XLim(1) <= h2.ax.XTick(1)-increment
+    h2.ax.XTick = [h2.ax.XTick(1)-increment h2.ax.XTick];
+elseif h2.ax.XLim(2) >= h2.ax.XTick(end)+increment
+    h2.ax.XTick = [h2.ax.XTick h2.ax.XTick(end)+increment];
+end
+% Update X max and X min edit boxes
+h2.pn(1).ed(1).String = num2str(h2.ax.XLim(1));
+h2.pn(1).ed(2).String = num2str(h2.ax.XLim(2));
+end
+function h2 = UpdateYAxis(h2,change)
+%% Updates the y axes
+
+% Update y axis
+h2.ax.YLim = h2.ax.YLim + change;
+% Update y tick
+increment = h2.ax.YTick(2)-h2.ax.YTick(1);
+if h2.ax.YLim(1) <= h2.ax.YTick(1)-increment
+    h2.ax.YTick = [h2.ax.YTick(1)-increment h2.ax.YTick];
+elseif h2.ax.YLim(2) >= h2.ax.YTick(end)+increment
+    h2.ax.YTick = [h2.ax.YTick h2.ax.YTick(end)+increment];
+end
+% Update Y max and Y min edit boxes
+h2.pn(1).ed(3).String = num2str(h2.ax.YLim(1));
+h2.pn(1).ed(4).String = num2str(h2.ax.YLim(2));
+end
 function [x,y] = SnapToData(coordinate, timestamp, dataseries)
-%% Nested function for selecting data points
+%% Selects and snaps to closest data point
 % coordinate is the [x,y] input coordinate collected by ginput
 % timestamp is the timestamp array
 % dataseries is the data array
