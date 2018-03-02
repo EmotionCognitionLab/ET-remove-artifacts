@@ -41,7 +41,7 @@ Reading in your raw data to a Matlab data structure is the only programming step
 
 To start up the GUI, run the ET_ReconstructPlots_GUI.m file from your Matlab command window. After the GUI appears, click the "Select Data" button to load in your .mat file. 
 
-![GUI Start Up](/docs/start_up_gui.png?raw=true)
+![GUI Start Up](/docs/start_up_gui.PNG?raw=true)
 
 
 ### Using the Automatic Blink Removal Algorithm
@@ -62,12 +62,12 @@ For most cases, set your resampling rate equal to the sampling rate of your eye-
 
 Let's take a look at an example! Load *Example_Data_Input.mat* into your GUI. This is the reconstructed plot looks like using the default algorithm parameters:
 
-![GUI Input Data](/docs/input_parameters_gui.png?raw=true)
+![GUI Input Data](/docs/input_parameters_gui.PNG?raw=true)
 
 
 Load *Example_Data_Output.mat* into your GUI. This is the reconstructed plot (looks much better qualitatively) after changing the algorithm parameters:
 
-![GUI Output Data](/docs/output_parameters_gui.png?raw=true)
+![GUI Output Data](/docs/output_parameters_gui.PNG?raw=true)
 
 
 Notice that in the above example, the only paramter I changed was the Hann Window Points. In this case, this was all that was needed to get a qualitatively better-looking reconstructed plot. However, there are still some blemishes in the signal, which we'll handle manually in the Plot Editor (covered in next section).
@@ -89,16 +89,16 @@ To edit your plot, you'll select the Start Point and End Point of the region you
 
 Here's an example of how you would use these tools:
 
-![Plot Editor](/docs/weird_artifacts_plot_editor.png?raw=true)
+![Plot Editor](/docs/weird_artifacts_plot_editor.PNG?raw=true)
 
-![Plot Editor](/docs/repopulate_plot_editor.png?raw=true)
+![Plot Editor](/docs/repopulate_plot_editor.PNG?raw=true)
 
-![Plot Editor](/docs/interpolate_plot_editor.png?raw=true)
+![Plot Editor](/docs/interpolate_plot_editor.PNG?raw=true)
 
 
 Here's a different example:
 
-![Plot Editor](/docs/messy_signal_plot_editor.png?raw=true)
+![Plot Editor](/docs/messy_signal_plot_editor.PNG?raw=true)
 
 
 To make this editing process more convenient, the plot editing tools are bound to keyboard hotkeys:
