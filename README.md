@@ -141,4 +141,4 @@ The tools in this repository and the preprocessing steps described above are des
 
 * **Ringo Huang** - ringohua@usc.edu
 
-Feel free to reach out to me with questions regarding this tool or pupil preprocessing. Good luck! :alien:
+Feel free to reach out to me with questions regarding this tool or pupil preprocessing. Good luck! :alien::telephone_receiver::house_with_garden:
