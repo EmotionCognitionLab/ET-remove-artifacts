@@ -115,7 +115,12 @@ Some of the common cases that you would come across when editing your plots:
 * An artifact in your signal is treated by the algorithm, but poorly done - select endpoints around the algorithm's interpolated region and re-populate the data. Then reselect the endpoints to better capture the artifact and interpolate over the reselected endpoints.
 * An artifact or series of artifacts that is greater than 2-seconds in duration - select endpoints that cover this region of "messy" signal and replace with NaNs. 
 
-As a personal rule, I replace that messy regions that are longer than 2-seconds with NaNs rather than interpolate. Later on in my analysis, I'll set criteria for trial exclusions based on the NaNs in the data. An example of this criteria may be: if the missing data occurs during a critical period of interest, exclude the trial. Or, if more than 50% of the pupil data in the trial is NaNs, exclude the trial.
+Load Example_Data_Final.mat to see what the final cleaned pupil data looks like after going through the entire algorithm + edit process.
+
+#### When do I replace data with NaNs rather than interpolate?
+Here, I replace that messy regions that are longer than 2-seconds with NaNs rather than interpolate. Later on in my analysis, I'll set criteria for trial exclusions based on the NaNs in the data. An example of this criteria may be: if the missing data occurs during a critical period of interest, exclude the trial. Or, if more than 50% of the pupil data in the trial is NaNs, exclude the trial.
+
+Ultimately, defining the cut-off between interpolating and replacing with NaNs depends on your study design. Are your stimuli events long or short? What is the typical duration of the pupillary response you're interested in? The shorter the duration, the more stringent you're criteria for replacing data with NaNs. Typically, if I am unsure of whether to replace with NaNs or interpolate, I err on the side of replacing with NaNs.
 
 ### Don't Forget to Save Your Work!
 
@@ -141,4 +146,6 @@ The tools in this repository and the preprocessing steps described above are des
 
 * **Ringo Huang** - ringohua@usc.edu
 
-Feel free to reach out to me with questions regarding this tool or pupil preprocessing. Good luck! :alien::telephone_receiver::house_with_garden:
+Feel free to reach out to me with questions regarding this tool or pupil preprocessing. Good luck! 
+
+:alien::telephone_receiver::house_with_garden:
