@@ -21,7 +21,9 @@ Before jumping into the GUI, it's important to point out that this program is on
 My preferred data-crunching environment is Matlab (which is why this repository is written in Matlab), but the following preprocessing steps can be replicated with any language of your choice (except step 2). I store all the pupil data from my study in a single Matlab data structure and pass that data structure along the pipeline.
 
 Pupil Preprocessing Pipeline:
+
 ![Pipeline](/docs/preprocessing_pipeline.png?raw=true)
+
 
 Step 1 is a necessary prerequisite for using this GUI, since the GUI reads a Matlab data structure in which the pupil data is stored in specific sub-fields.
 
