@@ -14,9 +14,9 @@ I recommend using Windows for complete functionality. I have tested the GUI on a
 
 ## How To Preprocess Your Pupil Data
 
-It's important to point out that this program is only one step in your entire preprocessing pipeline for your pupil data. Therefore, I'll use this section to describe how I usually preprocess my pupil data and how the ET Remove Artifacts GUI fits in to the overall pipeline.
+This section shows where the ET-remove-artifacts GUI fits into my typical pupil preprocessing workflow.
 
-I recommend using Matlab for crunching your pupil data so that this Matlab-based GUI more integrates fluidly in your pipeline; however, it is possible to use another language for the rest of your pipeline as long as your data is converted to the proper Matlab data structure for the GUI (more on this in the next section). 
+I personally prefer Matlab for all my data-crunching needs. However, the only prerequisite to using this GUI in your pipeline is that your data needs to be saved in a Matlab data structure that the GUI can read (more on this in the next section). 
 
 Here is an example of my typical pupil preprocessing pipeline:
 
@@ -144,7 +144,7 @@ The tools in this repository and the preprocessing steps described above are des
 
 ## Author
 
-* **Ringo Huang** - ringohua**at**usc**dot**edu
+* **Ringo Huang** - ringohua **at** usc **dot** edu
 
 Feel free to reach out to me with questions regarding this tool or pupil preprocessing. Good luck! 
 
