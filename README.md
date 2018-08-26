@@ -8,7 +8,7 @@ The idea behind creating this tool is to help researchers get started with pupil
 
 Download the .m files in this repository to your local drive, making sure that they are located in the same directory.
 
-The project is written and tested on Matlab 2017a/b. Should also work with earlier versions of Matlab (up to some point, but no guarantees).
+The project is written and tested on Matlab 2017a/b. Should also work with earlier versions of Matlab (but no guarantees).
 
 I recommend using Windows for complete functionality. I have tested the GUI on a Mac, but noticed some minor issues (e.g., cosmetic stuff and hotkey functionality in the plot editor).
 
@@ -76,7 +76,7 @@ You may want to change the default settings of the algorithm parameters; for exa
 
 ### Using the Manual Plot Editor
 
-The manual plot editor is designed to *complement* the blink removal algorithm - needless to say, do not use this tool to manipulate the data. At this stage of preprocessing, best practice is to dissociate the eye-tracking data from subject info and behavioral data.
+The manual plot editor is designed to *complement* the blink removal algorithm. At this stage of preprocessing, best practice is to dissociate the eye-tracking data from subject info and behavioral data.
 
 Even though the blink removal algorithm adequately removes most of the blink events, there may be unusual artifacts that remain undetected by the algorithm. Some pupil data may have periods of "messy signal" (e.g., head movement + eye closing), and the algorithm may do a poor job at interpolating across these artifacts. The plot editor allows you to remove undetected artifacts or redo interpolation.
 
@@ -144,7 +144,7 @@ The tools in this repository and the preprocessing steps described above are des
 
 ## Author
 
-* **Ringo Huang** - ringohua@usc.edu
+* **Ringo Huang** - ringohua**at**usc**dot**edu
 
 Feel free to reach out to me with questions regarding this tool or pupil preprocessing. Good luck! 
 
