@@ -2,8 +2,6 @@
 
 This tool is designed to help preprocess pupil signal from any eye-tracker (ET). This tool includes an automatic blink removal algorithm and a manual plot editor.
 
-The idea behind creating this tool is to help researchers get started with pupillometry analyses. Hopefully, you'll find the GUI useful in minimizing the amount of programming necessary to preprocess pupil data.
-
 ## Prerequisites
 
 Download the .m files in this repository to your local drive, making sure that they are located in the same directory.
