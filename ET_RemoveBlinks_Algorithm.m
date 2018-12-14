@@ -44,8 +44,11 @@ end
 if ~isfield(config,'resample_rate') || isempty(config.resample_rate)
     config.resample_rate = 120;
 end
-if ~isfield(config,'precision') || isempty(config.precision)
-    config.precsion = 0;
+if ~isfield(config,'resample_multiplier') || isempty(config.resample_multiplier)
+    if config.resample_multiplier <= 0
+        error('Resample Multiplier cannot be less than or equal to 0');
+    end
+    config.resample_multiplier = 1;
 end
 if ~isfield(config,'pos_threshold_multiplier') || isempty(config.pos_threshold_multiplier)
     config.pos_threshold_multiplier = 1;
@@ -60,19 +63,21 @@ else
     config.iterations = numel(config.sub_nums);
 end
 
+
 for k=1:config.iterations
     sub_num = config.sub_nums(k);
     pupil = S(sub_num).data.sample;
     timestamp = S(sub_num).data.smp_timestamp;
-
+    resample_multiplier = config.resample_multiplier;
+    
     %% Resample data and save resampled data to data structure S
-    [pupil,timestamp] = resample(pupil,timestamp,config.resample_rate);  %resample data
+    [pupil,timestamp] = resample(pupil,timestamp,config.resample_rate*resample_multiplier,1,1);  %resample data  
     
     S(sub_num).resampled.sample = pupil;                        %need this for plotting in the GUI
     S(sub_num).resampled.smp_timestamp = timestamp;
      
     %% Generate velocity profile
-    w1=hann(config.hann_win)/sum(hanning(config.hann_win));     %create hanning window (default is 11 point)
+    w1=hann(config.hann_win*resample_multiplier)/sum(hanning(config.hann_win*resample_multiplier));     %create hanning window (default is 11 point)
     pupil_smoothed=conv(pupil,w1,'same');                       %smoothed pupil signal
     vel=diff(pupil_smoothed)./diff(timestamp);                  %velocity profile
     
@@ -98,12 +103,7 @@ for k=1:config.iterations
     while i<numel(blink_index.offset) && i<numel(blink_index.onset)
         if blink_index.onset(i)<blink_index.offset(i)
             if blink_index.onset(i+1)>blink_index.offset(i)
-                if (timestamp(blink_index.onset(i+1)) - timestamp(blink_index.offset(i))) > config.precision
-                    i=i+1;
-                elseif (timestamp(blink_index.onset(i+1)) - timestamp(blink_index.offset(i))) <= config.precision %if the separation between two blink events is less than user-defined precision, merge the two events
-                    blink_index.onset(i+1) = [];
-                    blink_index.offset(i) = [];
-                end
+                i=i+1;
             elseif blink_index.onset(i+1)<=blink_index.offset(i)
                 blink_index.onset(i+1) = [];
             end
