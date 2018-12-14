@@ -12,6 +12,7 @@ function figure_handle2 = ET_EditArtifacts_Manual_GUI(h1)
 % "parent" function before the handle to this figure is deleted
 %
 % Author: Ringo Huang (ringohua@usc.edu)
+
 narginchk(1,1);
 
 figure_handle2 = figure('Position',[100,100,800,500],...
@@ -448,6 +449,9 @@ function h2 = SelectStart(h2)
     h2.reconstructed.sample);
 h2.pl(3).XData = x;
 h2.pl(3).YData = y;
+h2.pl(3).Color = [0 0.5 0];
+h2.pl(3).MarkerSize = 8;
+h2.pl(3).LineWidth = 1.5;
 h2.pn(2).ed(1).String = num2str(x);
 end
 function h2 = SelectEnd(h2)
@@ -457,6 +461,9 @@ function h2 = SelectEnd(h2)
     h2.reconstructed.sample);
 h2.pl(4).XData = x;
 h2.pl(4).YData = y;
+h2.pl(4).Color = [0.5 0 0];
+h2.pl(4).MarkerSize = 8;
+h2.pl(4).LineWidth = 1.5;
 h2.pn(2).ed(2).String = num2str(x);
 end
 function h2 = EditPlot(h2,action)
