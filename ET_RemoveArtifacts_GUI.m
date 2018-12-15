@@ -966,18 +966,24 @@ function h = update_plots(h)
 end
 
 function h = skip_or_run(h)
-    resp = questdlg(['Index ' num2str(h.sub_num) ' is missing some '...
-        'reconstructed data. Skip index or re-run automated artifact removal?'],...
+    resp = questdlg(['Index ' num2str(h.sub_num) ' is missing some required'...
+        'fields. Skip or re-run automated artifact removal?'],...
         'Warning!','Skip','Run','Skip');
     switch resp
         case 'Skip'
-            h.sub_num = h.sub_num + h.skip_direction;   %h.skip direction either moves index forward or backward depending on whether back or next was pressed
-            if h.sub_num < 1 
-            % if user has skipped to the beginning - reset sub_num to end
-                h.sub_num = numel(h.S);
-            elseif h.sub_num > numel(h.S)
-            % if user has skipped to the last index - reset sub_num to 1
-                h.sub_num = 1;
+            if ~check_field_exists_and_complete(h,'reconstructed')
+                if check_field_exists_and_complete(h,'output')
+                    h.S(h.sub_num).reconstructed = h.S(h.sub_num).output;
+                elseif check_field_exists_and_complete(h,'resampled')
+                    h.S(h.sub_num).reconstructed = h.S(h.sub_num).resampled;
+                else
+                    h.S(h.sub_num).reconstructed = h.S(h.sub_num).data;
+                end
+            end
+            if ~check_field_exists_and_complete(h,'output')
+                if check_field_exists_and_complete(h,'reconstructed')
+                    h = resample_to_sampling_rate(h);
+                end
             end
         case 'Run'
             % Run algorithm
@@ -985,6 +991,11 @@ function h = skip_or_run(h)
             % Remember to resample to create output field
             h = resample_to_sampling_rate(h);
     end
+end
+
+function field_exists_and_is_populated = check_field_exists_and_complete(h,field_name)
+% Checks if the necessary fields and sub-fields exist
+    field_exists_and_is_populated = isfield(h.S(h.sub_num),field_name) && isfield(h.S(h.sub_num).(field_name),'sample') && isfield(h.S(h.sub_num).(field_name),'smp_timestamp') && ~isempty(h.S(h.sub_num).(field_name).sample) && ~isempty(h.S(h.sub_num).(field_name).smp_timestamp);    
 end
 
 function [x_pixels,y_pixels] = maximize_figure(handle)
@@ -1005,8 +1016,25 @@ end
 function h = resample_to_sampling_rate(h)
 % Resamples data from the multiplier sampling rate to the user-defined
 % sampling rate. This matters if the resample multiplier is not 1.
+%
+% Also, replaces samples with NaN instead of interpolating over NaN (which is the default for resample)    
+
+    % Find NaN timestamps
+    NaN_la = isnan(h.S(h.sub_num).reconstructed.sample);
+    NaN_start_indices = find(diff([0;NaN_la])==1);
+    NaN_end_indices = find(diff([NaN_la;0])==-1);
+    NaN_start_ts =  h.S(h.sub_num).reconstructed.smp_timestamp(NaN_start_indices);
+    NaN_end_ts = h.S(h.sub_num).reconstructed.smp_timestamp(NaN_end_indices);
     
+    % Resample reconstructed samples and save to output field
     resample_rate = h.S(h.sub_num).filter_config.resample_rate;
     [h.S(h.sub_num).output.sample,h.S(h.sub_num).output.smp_timestamp] = resample(h.S(h.sub_num).reconstructed.sample,h.S(h.sub_num).reconstructed.smp_timestamp,resample_rate,1,1);
+    
+    % Replaces samples in output field with NaN where appropriate
+    output_NaN_la = false(numel(h.S(h.sub_num).output.sample),1);   % create logical array of length of sample 
+    for i=1:numel(NaN_start_ts)
+        output_NaN_la = output_NaN_la | (h.S(h.sub_num).output.smp_timestamp >= NaN_start_ts(i) & h.S(h.sub_num).output.smp_timestamp <= NaN_end_ts(i));
+    end
+    h.S(h.sub_num).output.sample(output_NaN_la) = NaN;
     
 end
