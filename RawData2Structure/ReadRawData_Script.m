@@ -13,7 +13,8 @@ config.type_msg_string = 'MSG';
 config.type_smp_string = 'SMP';
 config.type_col = 2;
 config.msg_col = 4;
-config.smp_col = 8;
+config.left_pupil_col = 8;
+config.right_pupil_col = 10;
 config.ts_col = 1;
 
 files = dir('Example*.txt'); %Get file info for all raw data files in this directory
