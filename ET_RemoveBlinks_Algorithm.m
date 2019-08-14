@@ -74,6 +74,8 @@ for k=1:config.iterations
     timestamp = S(sub_num).data.smp_timestamp;
     resample_multiplier = config.resample_multiplier;
     
+    
+    
     %% Resample data and save resampled data to data structure S
     [pupil,timestamp] = resample(pupil,timestamp,config.resample_rate*resample_multiplier,1,1);  %resample data
     
@@ -82,63 +84,62 @@ for k=1:config.iterations
     
     %% Detect Blinks
     % Generate velocity profile
-    if config.detect_blinks == 1
-        w1=hann(config.hann_win*resample_multiplier)/sum(hanning(config.hann_win*resample_multiplier));     %create hanning window (default is 11 point)
-        pupil_smoothed=conv(pupil,w1,'same');                       %smoothed pupil signal
-        vel=diff(pupil_smoothed)./diff(timestamp);                  %velocity profile
-        
-        S(sub_num).velocity.velocity = vel;
-        S(sub_num).velocity.vel_timestamp = timestamp(1:end-1);
-        
-        % Find blink onset/blink offset index using vel
-        neg_threshold = mean(vel)-config.neg_threshold_multiplier*std(vel);
-        greater_neg = vel >= neg_threshold;
-        less_neg = vel < neg_threshold;
-        greater_neg(2:end+1) = greater_neg;
-        less_neg(end+1) = less_neg(end);
-        blink_index.onset = find(greater_neg&less_neg);
-        
-        pos_threshold = mean(vel)+config.pos_threshold_multiplier*std(vel);
-        greater_pos = vel > pos_threshold;
-        less_pos = vel <= pos_threshold;
-        greater_pos(2:end+1) = greater_pos;
-        less_pos(end+1) = less_pos(end);
-        blink_index.offset = find(greater_pos&less_pos);
-        
-        i=1;
-        while i<numel(blink_index.offset) && i<numel(blink_index.onset)
-            if blink_index.onset(i)<blink_index.offset(i)
-                if blink_index.onset(i+1)>blink_index.offset(i)
-                    i=i+1;
-                elseif blink_index.onset(i+1)<=blink_index.offset(i)
-                    blink_index.onset(i+1) = [];
-                end
-            elseif blink_index.onset(i)>=blink_index.offset(i)
-                blink_index.offset(i) = [];
+    w1=hann(config.hann_win*resample_multiplier)/sum(hanning(config.hann_win*resample_multiplier));     %create hanning window (default is 11 point)
+    pupil_smoothed=conv(pupil,w1,'same');                       %smoothed pupil signal
+    vel=diff(pupil_smoothed)./diff(timestamp);                  %velocity profile
+    
+    S(sub_num).velocity.velocity = vel;
+    S(sub_num).velocity.vel_timestamp = timestamp(1:end-1);
+    
+    % Find blink onset/blink offset index using vel
+    neg_threshold = mean(vel)-config.neg_threshold_multiplier*std(vel);
+    greater_neg = vel >= neg_threshold;
+    less_neg = vel < neg_threshold;
+    greater_neg(2:end+1) = greater_neg;
+    less_neg(end+1) = less_neg(end);
+    blink_index.onset = find(greater_neg&less_neg);
+    
+    pos_threshold = mean(vel)+config.pos_threshold_multiplier*std(vel);
+    greater_pos = vel > pos_threshold;
+    less_pos = vel <= pos_threshold;
+    greater_pos(2:end+1) = greater_pos;
+    less_pos(end+1) = less_pos(end);
+    blink_index.offset = find(greater_pos&less_pos);
+    
+    i=1;
+    while i<numel(blink_index.offset) && i<numel(blink_index.onset)
+        if blink_index.onset(i)<blink_index.offset(i)
+            if blink_index.onset(i+1)>blink_index.offset(i)
+                i=i+1;
+            elseif blink_index.onset(i+1)<=blink_index.offset(i)
+                blink_index.onset(i+1) = [];
             end
+        elseif blink_index.onset(i)>=blink_index.offset(i)
+            blink_index.offset(i) = [];
         end
-        
-        if numel(blink_index.onset) > numel(blink_index.offset)
-            blink_index.onset(numel(blink_index.offset)+1:end) = [];
-        elseif numel(blink_index.onset) < numel(blink_index.offset)
-            blink_index.offset(numel(blink_index.onset)+1:end) = [];
-        end
-        
-        S(sub_num).blink_onset.velocity = vel(blink_index.onset);
-        S(sub_num).blink_onset.vel_timestamp = timestamp(blink_index.onset);
-        S(sub_num).blink_onset.sample = pupil(blink_index.onset);
-        S(sub_num).blink_onset.smp_timestamp = timestamp(blink_index.onset);
-        
-        S(sub_num).blink_offset.velocity = vel(blink_index.offset);
-        S(sub_num).blink_offset.vel_timestamp = timestamp(blink_index.offset);
-        S(sub_num).blink_offset.sample = pupil(blink_index.offset);
-        S(sub_num).blink_offset.smp_timestamp = timestamp(blink_index.offset);
     end
+    
+    if numel(blink_index.onset) > numel(blink_index.offset)
+        blink_index.onset(numel(blink_index.offset)+1:end) = [];
+    elseif numel(blink_index.onset) < numel(blink_index.offset)
+        blink_index.offset(numel(blink_index.onset)+1:end) = [];
+    end
+    
+    S(sub_num).blink_onset.velocity = vel(blink_index.onset);
+    S(sub_num).blink_onset.vel_timestamp = timestamp(blink_index.onset);
+    S(sub_num).blink_onset.sample = pupil(blink_index.onset);
+    S(sub_num).blink_onset.smp_timestamp = timestamp(blink_index.onset);
+    
+    S(sub_num).blink_offset.velocity = vel(blink_index.offset);
+    S(sub_num).blink_offset.vel_timestamp = timestamp(blink_index.offset);
+    S(sub_num).blink_offset.sample = pupil(blink_index.offset);
+    S(sub_num).blink_offset.smp_timestamp = timestamp(blink_index.offset);
+    
     
     %% Detect Invalids
     if config.detect_invalid_samples == 1
-    S(sub_num).invalids_onset = struct;
-    invalids_index = struct;
+        S(sub_num).invalids_onset = struct;
+        invalids_index = struct;
     end
     
     %% Merge blink_index and invalid_index to create artifact_index
@@ -148,8 +149,8 @@ for k=1:config.iterations
     if config.detect_blinks == 1
         S(sub_num).artifact_onset = S(sub_num).blink_onset;
         artifact_index = blink_index;
-    end     
-        
+    end
+    
     %% interpolate - future changes - use "averages" around the timepoints instead of the single value for the timepoints
     for j=1:length(artifact_index.onset)
         if timestamp(artifact_index.offset(j))-timestamp(artifact_index.onset(j)) > 5
@@ -188,43 +189,43 @@ end
 
 %% Nested functions
 function config = check_sub_field_and_assign_default(config, sub_field_name)
-    % Checks that sub_field of config exists and is populated; If it's
-    % invalid, assign default value
-    %
-    % Note: define default values for each sub_field parameter here
-    
-    if ~isfield(config,sub_field_name) || isempty(config.(sub_field_name))
-        switch sub_field_name
-            case 'resample_rate'
-                default_value = 120;
-            case 'resample_multiplier'
-                if config.resample_multiplier <= 0
-                    error('Resample Multiplier cannot be less than or equal to 0');
-                end
-                default_value = 1;
-            case 'detect_blinks'
-                default_value = 1;      % enable detect blinks by default
-            case 'hann_window'
-                default_value = 11;
-            case 'pos_threshold_multiplier'
-                default_value = 1;
-            case 'neg_threshold_multiplier'
-                default_value = 1;
-            case 'detect_invalid_samples'
-                default_value = 0;      % disable detect invalid samples by default
-            case 'forward_padding'
-                default_value = 0;      % default is 0 s
-            case 'backward_padding'
-                default_value = 0;      % default is 0 s
-            case 'merge_invalids_gap' 
-                default_value = 0;      % default is 0 s
-            case 'merge_artifacts_gap'
-                default_value = 0;
-            case 'max_artifact_duration'
-                default_value = 0;
-            case 'max_artifact_treatment'
-                default_value = 'ignore';
-        end
-        config.(sub_field_name) = default_value;
+% Checks that sub_field of config exists and is populated; If it's
+% invalid, assign default value
+%
+% Note: define default values for each sub_field parameter here
+
+if ~isfield(config,sub_field_name) || isempty(config.(sub_field_name))
+    switch sub_field_name
+        case 'resample_rate'
+            default_value = 120;
+        case 'resample_multiplier'
+            if config.resample_multiplier <= 0
+                error('Resample Multiplier cannot be less than or equal to 0');
+            end
+            default_value = 1;
+        case 'detect_blinks'
+            default_value = 1;      % enable detect blinks by default
+        case 'hann_window'
+            default_value = 11;
+        case 'pos_threshold_multiplier'
+            default_value = 1;
+        case 'neg_threshold_multiplier'
+            default_value = 1;
+        case 'detect_invalid_samples'
+            default_value = 0;      % disable detect invalid samples by default
+        case 'forward_padding'
+            default_value = 0;      % default is 0 s
+        case 'backward_padding'
+            default_value = 0;      % default is 0 s
+        case 'merge_invalids_gap'
+            default_value = 0;      % default is 0 s
+        case 'merge_artifacts_gap'
+            default_value = 0;
+        case 'max_artifact_duration'
+            default_value = 0;
+        case 'max_artifact_treatment'
+            default_value = 'ignore';
     end
+    config.(sub_field_name) = default_value;
+end
 end
