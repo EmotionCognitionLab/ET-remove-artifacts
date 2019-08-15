@@ -50,7 +50,7 @@ config = check_sub_field_and_assign_default(config, 'neg_threshold_multiplier');
 
 % Detect Invalid Samples:
 config = check_sub_field_and_assign_default(config, 'detect_invalid_samples');
-config = check_sub_field_and_assign_default(config, 'forward_padding');
+config = check_sub_field_and_assign_default(config, 'front_padding');
 config = check_sub_field_and_assign_default(config, 'rear_padding');
 config = check_sub_field_and_assign_default(config, 'merge_invalids_gap');
 
@@ -70,21 +70,33 @@ end
 
 for k=1:config.iterations
     sub_num = config.sub_nums(k);
-    pupil = S(sub_num).data.sample;
-    timestamp = S(sub_num).data.smp_timestamp;
-    resample_multiplier = config.resample_multiplier;
     
-    
-    
-    %% Resample data and save resampled data to data structure S
-    [pupil,timestamp] = resample(pupil,timestamp,config.resample_rate*resample_multiplier,1,1);  %resample data
-    
-    S(sub_num).resampled.sample = pupil;                        %need this for plotting in the GUI
-    S(sub_num).resampled.smp_timestamp = timestamp;
+    %% Resample data sub_fields
+    if isfield(S(sub_num),'data')
+        if isfield(S(sub_num).data,'smp_timestamp')
+            if isfield(S(sub_num).data,'sample')
+                [pupil,timestamp] = resample(S(sub_num).data.sample, S(sub_num).data.smp_timestamp,config.resample_rate*config.resample_multiplier,1,1);    % resample sample
+                S(sub_num).resampled.sample = pupil;
+                S(sub_num).resampled.smp_timestamp = timestamp;
+            else
+                error('Could not find "sample" sub-field.');
+            end
+            if isfield(S(sub_num).data,'valid')
+                valid = resample(S(sub_num).data.valid, S(sub_num).data.smp_timestamp,config.resample_rate*config.resample_multiplier,1,1);                 % resample valid
+                S(sub_num).resampled.valid = valid;
+            else
+                % Not critical if "valid" is missing
+            end
+        else
+            error('Could not find "smp_timestamp" field.');
+        end
+    else
+        error('Could not find "data" sub-field.');
+    end
     
     %% Detect Blinks
     % Generate velocity profile
-    w1=hann(config.hann_win*resample_multiplier)/sum(hanning(config.hann_win*resample_multiplier));     %create hanning window (default is 11 point)
+    w1 = hann(config.hann_win*config.resample_multiplier)/sum(hanning(config.hann_win*config.resample_multiplier));     %create hanning window (default is 11 point)
     pupil_smoothed=conv(pupil,w1,'same');                       %smoothed pupil signal
     vel=diff(pupil_smoothed)./diff(timestamp);                  %velocity profile
     
@@ -106,6 +118,8 @@ for k=1:config.iterations
     less_pos(end+1) = less_pos(end);
     blink_index.offset = find(greater_pos&less_pos);
     
+    % Shuffle offsets and onsets by deleting onsets that lie in between an
+    % onset and an offset or an offset that came before the onse
     i=1;
     while i<numel(blink_index.offset) && i<numel(blink_index.onset)
         if blink_index.onset(i)<blink_index.offset(i)
@@ -119,12 +133,15 @@ for k=1:config.iterations
         end
     end
     
+    
+    % Delete any leftovers
     if numel(blink_index.onset) > numel(blink_index.offset)
         blink_index.onset(numel(blink_index.offset)+1:end) = [];
     elseif numel(blink_index.onset) < numel(blink_index.offset)
         blink_index.offset(numel(blink_index.onset)+1:end) = [];
     end
     
+    % Save to structure
     S(sub_num).blink_onset.velocity = vel(blink_index.onset);
     S(sub_num).blink_onset.vel_timestamp = timestamp(blink_index.onset);
     S(sub_num).blink_onset.sample = pupil(blink_index.onset);
@@ -135,25 +152,79 @@ for k=1:config.iterations
     S(sub_num).blink_offset.sample = pupil(blink_index.offset);
     S(sub_num).blink_offset.smp_timestamp = timestamp(blink_index.offset);
     
+    % Create blink_array
+    blink_array_indices = [];
+    for blink_num = 1:numel(blink_index.onset)
+        blink_array_indices = [blink_array_indices blink_index.onset(blink_num):blink_index.offset(blink_num)];
+    end
+    blink_array = zeros(numel(pupil),1);
+    blink_array(blink_array_indices) = 1;
     
     %% Detect Invalids
-    if config.detect_invalid_samples == 1
-        S(sub_num).invalids_onset = struct;
-        invalids_index = struct;
+    invalid_array = zeros(numel(pupil),1);      % initiate invalid_array as an array of zeros of same length as pupil array; will replace if "valid" is detected as part of the data structure
+    
+    if isfield(S(sub_num).data, 'valid') && ~isempty(S(sub_num).data.valid)
+        
+        invalid_array = ~valid;
+        invalid_diff = diff([0; invalid_array]);
+        invalid_index.onset = find(invalid_diff == 1);
+        invalid_index.offset = find(invalid_diff == -1) - 1;
+        
+        % Add padding to the onset/offsets
+        front_padding_indices = round(config.front_padding/(timestamp(2)-timestamp(1)));
+        rear_padding_indices = round(config.rear_padding/(timestamp(2)-timestamp(1)));
+        invalid_index.onset = invalid_index.onset - front_padding_indices;
+        invalid_index.offset = invalid_index.offset + rear_padding_indices;
+        
+        % Create invalid array (event if there's overlap of invalid regions
+        % - due to padding - the way matlab assigns valus to array gets
+        % around it).
+        invalid_array_indices = [];
+        for invalid_num = 1:numel(invalid_index.onset)
+            if invalid_index.onset(invalid_num) < 1                 % replace index with 1 if front-padding brought it to a non-positive number
+                invalid_index.onset(invalid_num) = 1;
+            end
+            if invalid_index.offset(invalid_num) > numel(pupil)     % replace index with numel(pupil) if rear-padding brought it to greater than number of pupil samples
+                invalid_index.offset(invalid_num) = numel(pupil);
+            end
+            invalid_array_indices = [invalid_array_indices invalid_index.onset(invalid_num):invalid_index.offset(invalid_num)];
+        end
+        invalid_array = zeros(numel(pupil),1);
+        invalid_array(invalid_array_indices) = 1;
+        
+        S(sub_num).invalid_onset.velocity = vel(invalid_index.onset);
+        S(sub_num).invalid_onset.vel_timestamp = timestamp(invalid_index.onset);
+        S(sub_num).invalid_onset.sample = pupil(invalid_index.onset);
+        S(sub_num).invalid_onset.smp_timestamp = timestamp(invalid_index.onset);
+        
+        S(sub_num).invalid_offset.velocity = vel(invalid_index.offset);
+        S(sub_num).invalid_offset.vel_timestamp = timestamp(invalid_index.offset);
+        S(sub_num).invalid_offset.sample = pupil(invalid_index.offset);
+        S(sub_num).invalid_offset.smp_timestamp = timestamp(invalid_index.offset);
     end
     
     %% Merge blink_index and invalid_index to create artifact_index
-    S(sub_num).artifact_onset = struct;
-    artifact_index.onset = [];
-    artifact_index.offset = [];
-    if config.detect_blinks == 1
-        S(sub_num).artifact_onset = S(sub_num).blink_onset;
-        artifact_index = blink_index;
-    end
     
+    artifact_array = invalid_array*config.detect_invalid_samples | blink_array*config.detect_blinks;      % if the tag for detect blink or detect invalid is 0, then the array contributes no weight to artifact_array
+    artifact_diff = diff([0; artifact_array]);
+    artifact_index.onset = find(artifact_diff == 1);
+    artifact_index.offset = find(artifact_diff == -1) - 1;
+    artifact_index.onset(artifact_index.onset < 1) = 1;
+    artifact_index.offset(artifact_index.onset > numel(pupil)) = numel(pupil);
+    
+    S(sub_num).artifact_onset.velocity = vel(artifact_index.onset);
+    S(sub_num).artifact_onset.vel_timestamp = timestamp(artifact_index.onset);
+    S(sub_num).artifact_onset.sample = pupil(artifact_index.onset);
+    S(sub_num).artifact_onset.smp_timestamp = timestamp(artifact_index.onset);
+    
+    S(sub_num).artifact_offset.velocity = vel(artifact_index.offset);
+    S(sub_num).artifact_offset.vel_timestamp = timestamp(artifact_index.offset);
+    S(sub_num).artifact_offset.sample = pupil(artifact_index.offset);
+    S(sub_num).artifact_offset.smp_timestamp = timestamp(artifact_index.offset);
     %% interpolate - future changes - use "averages" around the timepoints instead of the single value for the timepoints
     for j=1:length(artifact_index.onset)
-        if timestamp(artifact_index.offset(j))-timestamp(artifact_index.onset(j)) > 5
+        
+        if timestamp(artifact_index.offset(j))-timestamp(artifact_index.onset(j)) > 60
             %don't do anything if interpolation region is greater than 5
             %seconds
         else
@@ -213,9 +284,9 @@ if ~isfield(config,sub_field_name) || isempty(config.(sub_field_name))
             default_value = 1;
         case 'detect_invalid_samples'
             default_value = 0;      % disable detect invalid samples by default
-        case 'forward_padding'
+        case 'front_padding'
             default_value = 0;      % default is 0 s
-        case 'backward_padding'
+        case 'rear_padding'
             default_value = 0;      % default is 0 s
         case 'merge_invalids_gap'
             default_value = 0;      % default is 0 s
