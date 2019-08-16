@@ -6,7 +6,7 @@ This tool is designed to help preprocess pupil signal from any eye-tracker (ET).
 
 Download the .m files in this repository to your local drive, making sure that they are located in the same directory.
 
-The project is written and tested on Matlab 2017a/b. Should also work with earlier versions of Matlab (but no guarantees).
+The project is written and tested on Matlab 2019a. Probably won't work on earlier versions of Matlab due to use of uicomponents.
 
 I recommend using Windows for complete functionality. I have tested the GUI on a Mac, but noticed some minor issues (e.g., cosmetic stuff and hotkey functionality in the plot editor).
 
