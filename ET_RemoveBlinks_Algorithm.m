@@ -82,7 +82,11 @@ for k=1:config.iterations
                 error('Could not find "sample" sub-field.');
             end
             if isfield(S(sub_num).data,'valid')
-                valid = resample(S(sub_num).data.valid, S(sub_num).data.smp_timestamp,config.resample_rate*config.resample_multiplier,1,1);                 % resample valid
+                if islogical(S(sub_num).data.valid)
+                    S(sub_num).data.valid = double(S(sub_num).data.valid);      % convert logical array to double for resample fn to work
+                end
+                valid = round(resample(S(sub_num).data.valid, S(sub_num).data.smp_timestamp,config.resample_rate*config.resample_multiplier,1,1));                 % resample valid; also, round binarizes the resampled "logical" array
+                
                 S(sub_num).resampled.valid = valid;
             else
                 % Not critical if "valid" is missing
