@@ -97,11 +97,11 @@ for k=1:config.iterations
     %% Detect Blinks
     % Generate velocity profile
     w1 = hann(config.hann_win*config.resample_multiplier)/sum(hanning(config.hann_win*config.resample_multiplier));     %create hanning window (default is 11 point)
-    pupil_smoothed=conv(pupil,w1,'same');                       %smoothed pupil signal
-    vel=diff(pupil_smoothed)./diff(timestamp);                  %velocity profile
+    pupil_smoothed=conv(pupil,w1,'same');                                       %smoothed pupil signal
+    vel=[diff(pupil_smoothed); 0]./[diff(timestamp); (timestamp(2) - timestamp(1))];            %velocity profile
     
     S(sub_num).velocity.velocity = vel;
-    S(sub_num).velocity.vel_timestamp = timestamp(1:end-1);
+    S(sub_num).velocity.vel_timestamp = timestamp;
     
     % Find blink onset/blink offset index using vel
     neg_threshold = mean(vel)-config.neg_threshold_multiplier*std(vel);
@@ -166,7 +166,7 @@ for k=1:config.iterations
     if isfield(S(sub_num).data, 'valid') && ~isempty(S(sub_num).data.valid)
         
         invalid_array = ~valid;
-        invalid_diff = diff([0; invalid_array]);
+        invalid_diff = diff([0; invalid_array; 0]);     % pad front and rear with a zero
         invalid_index.onset = find(invalid_diff == 1);
         invalid_index.offset = find(invalid_diff == -1) - 1;
         
@@ -177,7 +177,7 @@ for k=1:config.iterations
         invalid_index.offset = invalid_index.offset + rear_padding_indices;
         
         % Create invalid array (event if there's overlap of invalid regions
-        % - due to padding - the way matlab assigns valus to array gets
+        % - due to padding - the way matlab assigns values to array gets
         % around it).
         invalid_array_indices = [];
         for invalid_num = 1:numel(invalid_index.onset)
@@ -204,13 +204,10 @@ for k=1:config.iterations
     end
     
     %% Merge blink_index and invalid_index to create artifact_index
-    
     artifact_array = invalid_array*config.detect_invalid_samples | blink_array*config.detect_blinks;      % if the tag for detect blink or detect invalid is 0, then the array contributes no weight to artifact_array
-    artifact_diff = diff([0; artifact_array]);
+    artifact_diff = diff([0; artifact_array; 0]);
     artifact_index.onset = find(artifact_diff == 1);
     artifact_index.offset = find(artifact_diff == -1) - 1;
-    artifact_index.onset(artifact_index.onset < 1) = 1;
-    artifact_index.offset(artifact_index.onset > numel(pupil)) = numel(pupil);
     
     S(sub_num).artifact_onset.velocity = vel(artifact_index.onset);
     S(sub_num).artifact_onset.vel_timestamp = timestamp(artifact_index.onset);
@@ -223,6 +220,7 @@ for k=1:config.iterations
     S(sub_num).artifact_offset.smp_timestamp = timestamp(artifact_index.offset);
     %% interpolate - future changes - use "averages" around the timepoints instead of the single value for the timepoints
     for j=1:length(artifact_index.onset)
+        
         
         if timestamp(artifact_index.offset(j))-timestamp(artifact_index.onset(j)) > 60
             %don't do anything if interpolation region is greater than 5
