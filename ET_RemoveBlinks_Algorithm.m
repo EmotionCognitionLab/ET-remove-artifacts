@@ -45,6 +45,13 @@ config = check_sub_field_and_assign_default(config, 'resample_multiplier');
 % Detect Blinks:
 config = check_sub_field_and_assign_default(config, 'detect_blinks');
 config = check_sub_field_and_assign_default(config, 'hann_window');
+config = check_sub_field_and_assign_default(config, 'filter_order');
+config = check_sub_field_and_assign_default(config, 'peak_boundary_threshold');
+config = check_sub_field_and_assign_default(config, 'trough_boundary_threshold');
+config = check_sub_field_and_assign_default(config, 'passband_freq');
+config = check_sub_field_and_assign_default(config, 'stopband_freq');
+config = check_sub_field_and_assign_default(config, 'peak_threshold_factor');
+config = check_sub_field_and_assign_default(config, 'trough_threshold_factor');
 config = check_sub_field_and_assign_default(config, 'pos_threshold_multiplier');
 config = check_sub_field_and_assign_default(config, 'neg_threshold_multiplier');
 
@@ -99,51 +106,114 @@ for k=1:config.iterations
     end
     
     %% Detect Blinks
-    % Generate velocity profile
-    w1 = hann(config.hann_win*config.resample_multiplier)/sum(hanning(config.hann_win*config.resample_multiplier));     %create hanning window (default is 11 point)
-    pupil_smoothed=conv(pupil,w1,'same');                                       %smoothed pupil signal
-    vel=[diff(pupil_smoothed); 0]./[diff(timestamp); (timestamp(2) - timestamp(1))];            %velocity profile
+    % Generate velocity profile using differentiator FIR filter
+    
+    
+    d = designfilt('differentiatorfir','FilterOrder',config.filter_order, ...
+        'PassbandFrequency',config.passband_freq,'StopbandFrequency',config.stopband_freq, ...
+        'SampleRate',config.resample_rate);
+    
+    dt = timestamp(2)-timestamp(1);
+    
+    delay = mean(grpdelay(d));
+    pupil_pad = [repmat(pupil(1),delay,1); pupil; repmat(pupil(end),delay,1)];      % add 2*delay number of samples of the first pupil_smoothed value to beginning
+    
+    vel = filter(d,pupil_pad)/dt;
+        
+    vel(1:2*delay) = [];
     
     S(sub_num).velocity.velocity = vel;
     S(sub_num).velocity.vel_timestamp = timestamp;
     
-    % Find blink onset/blink offset index using vel
-    neg_threshold = mean(vel)-config.neg_threshold_multiplier*std(vel);
-    greater_neg = vel >= neg_threshold;
-    less_neg = vel < neg_threshold;
-    greater_neg(2:end+1) = greater_neg;
-    less_neg(end+1) = less_neg(end);
-    blink_index.onset = find(greater_neg&less_neg);
+    % Detect peak, troughs, and their boundaries
+    [peak,peak_loc] = findpeaks(vel);
+    [trough,trough_loc] = findpeaks(-vel);
+    trough = - trough;
     
-    pos_threshold = mean(vel)+config.pos_threshold_multiplier*std(vel);
-    greater_pos = vel > pos_threshold;
-    less_pos = vel <= pos_threshold;
-    greater_pos(2:end+1) = greater_pos;
-    less_pos(end+1) = less_pos(end);
-    blink_index.offset = find(greater_pos&less_pos);
+    % Find outlier peaks/troughs - these are the "artifact" peaks/troughs
+    peak_outlier_la = isoutlier(peak,'ThresholdFactor',config.peak_threshold_factor) & peak > 0;
+    trough_outlier_la = isoutlier(trough,'ThresholdFactor',config.trough_threshold_factor) & trough < 0;
     
-    % Shuffle offsets and onsets by deleting onsets that lie in between an
-    % onset and an offset or an offset that came before the onse
-    i=1;
-    while i<numel(blink_index.offset) && i<numel(blink_index.onset)
-        if blink_index.onset(i)<blink_index.offset(i)
-            if blink_index.onset(i+1)>blink_index.offset(i)
-                i=i+1;
-            elseif blink_index.onset(i+1)<=blink_index.offset(i)
-                blink_index.onset(i+1) = [];
-            end
-        elseif blink_index.onset(i)>=blink_index.offset(i)
-            blink_index.offset(i) = [];
+    peak_outlier = peak(peak_outlier_la);
+    peak_loc_outlier = peak_loc(peak_outlier_la);
+    trough_outlier = trough(trough_outlier_la);
+    trough_loc_outlier = trough_loc(trough_outlier_la);
+    
+    % Find boundaries of "artifact" peaks/troughs (sample with sign change or trough, whichever comes first)
+    neg_locs = find(vel < config.peak_boundary_threshold);
+    pos_locs = find(vel > config.trough_boundary_threshold);
+    
+    peak_start_loc = [];
+    peak_end_loc = [];
+    for i = 1:numel(peak_loc_outlier)
+        neg_locs_index = find(neg_locs > peak_loc_outlier(i),1,'first');
+        if isempty(neg_locs_index)
+            continue
         end
+        if neg_locs_index > 1
+            peak_start_loc(i) = neg_locs(neg_locs_index-1);
+        else
+            peak_start_loc(i) = 1;
+        end
+        peak_end_loc(i) = neg_locs(neg_locs_index);
+        
+        % Non-outlier troughs that come before or after peak_loc_outlier(i)
+        start_trough_loc = trough_loc(find(trough_loc < peak_loc_outlier(i),1,'last'));
+        end_trough_loc = trough_loc(find(trough_loc > peak_loc_outlier(i),1,'first'));
+        
+        % Check if a trough comes before; replace peak_start_loc with trough if
+        % so
+        if peak_start_loc(i) < start_trough_loc
+            peak_start_loc(i) = start_trough_loc;
+        end
+        if peak_end_loc(i) > end_trough_loc
+            peak_end_loc(i) = end_trough_loc;
+        end
+        
     end
     
-    
-    % Delete any leftovers
-    if numel(blink_index.onset) > numel(blink_index.offset)
-        blink_index.onset(numel(blink_index.offset)+1:end) = [];
-    elseif numel(blink_index.onset) < numel(blink_index.offset)
-        blink_index.offset(numel(blink_index.onset)+1:end) = [];
+    trough_start_loc = [];
+    trough_end_loc = [];
+    for i = 1:numel(trough_loc_outlier)
+        pos_locs_index = find(pos_locs > trough_loc_outlier(i),1,'first');
+        if isempty(pos_locs_index)
+            continue
+        end
+        if pos_locs_index > 1
+            trough_start_loc(i) = pos_locs(pos_locs_index-1);
+        else
+            trough_start_loc(i) = 1;
+        end
+        trough_end_loc(i) = pos_locs(pos_locs_index);
+        
+        % Non-outlier peaks that come before or after peak_loc_outlier(i)
+        start_peak_loc = peak_loc(find(peak_loc < trough_loc_outlier(i),1,'last'));
+        end_peak_loc = peak_loc(find(peak_loc > trough_loc_outlier(i),1,'first'));
+        
+        % Check if a trough comes before; replace peak_start_loc with trough if
+        % so
+        if trough_start_loc(i) < start_peak_loc
+            trough_start_loc(i) = start_peak_loc;
+        end
+        if trough_end_loc(i) > end_peak_loc
+            trough_end_loc(i) = end_peak_loc;
+        end
+        
     end
+    
+    % Merge boundaries
+    start_boundary = [peak_start_loc trough_start_loc];
+    end_boundary = [peak_end_loc trough_end_loc];
+    blink_array = zeros(numel(pupil),1);
+    for i = 1:numel(start_boundary)
+        blink_array(start_boundary(i):end_boundary(i)) = 1;
+    end
+    
+    blink_la_diff = diff([0; blink_array]);
+    
+    blink_index.onset = find(blink_la_diff == 1);
+    blink_index.offset  = find(blink_la_diff == -1)-1;
+    
     
     % Save to structure
     S(sub_num).blink_onset.velocity = vel(blink_index.onset);
@@ -156,13 +226,6 @@ for k=1:config.iterations
     S(sub_num).blink_offset.sample = pupil(blink_index.offset);
     S(sub_num).blink_offset.smp_timestamp = timestamp(blink_index.offset);
     
-    % Create blink_array
-    blink_array_indices = [];
-    for blink_num = 1:numel(blink_index.onset)
-        blink_array_indices = [blink_array_indices blink_index.onset(blink_num):blink_index.offset(blink_num)];
-    end
-    blink_array = zeros(numel(pupil),1);
-    blink_array(blink_array_indices) = 1;
     
     %% Detect Invalids
     invalid_array = zeros(numel(pupil),1);      % initiate invalid_array as an array of zeros of same length as pupil array; will replace if "valid" is detected as part of the data structure
@@ -280,6 +343,20 @@ if ~isfield(config,sub_field_name) || isempty(config.(sub_field_name))
             default_value = 1;      % enable detect blinks by default
         case 'hann_window'
             default_value = 11;
+        case 'filter_order'
+            default_value = 20;
+        case 'peak_boundary_threshold'
+            default_value = 0;
+        case 'trough_boundary_threshold'
+            default_value = 0;
+        case 'passband_freq'        % change to be more robust
+            default_value = 10;            
+        case 'stopband_freq'        % change to be more robust
+            default_value = 12;
+        case 'peak_threshold_factor'        % change to be more robust
+            default_value = 1;
+        case 'trough_threshold_factor'        % change to be more robust
+            default_value = 1;             
         case 'pos_threshold_multiplier'
             default_value = 1;
         case 'neg_threshold_multiplier'
