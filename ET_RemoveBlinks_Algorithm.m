@@ -243,6 +243,9 @@ for k=1:config.iterations
         invalid_index.onset = invalid_index.onset - front_padding_indices;
         invalid_index.offset = invalid_index.offset + rear_padding_indices;
         
+        % Fill in invalid gap durations less than user-specified
+        invalid_index = merge_gaps(invalid_index, timestamp, config.merge_invalids_gap);
+        
         % Create invalid array (event if there's overlap of invalid regions
         % - due to padding - the way matlab assigns values to array gets
         % around it).
@@ -258,7 +261,7 @@ for k=1:config.iterations
         end
         invalid_array = zeros(numel(pupil),1);
         invalid_array(invalid_array_indices) = 1;
-        
+
         S(sub_num).invalid_onset.velocity = vel(invalid_index.onset);
         S(sub_num).invalid_onset.vel_timestamp = timestamp(invalid_index.onset);
         S(sub_num).invalid_onset.sample = pupil(invalid_index.onset);
@@ -276,6 +279,9 @@ for k=1:config.iterations
     artifact_index.onset = find(artifact_diff == 1);
     artifact_index.offset = find(artifact_diff == -1) - 1;
     
+    % Fill in invalid gap durations less than user-specified
+    artifact_index = merge_gaps(artifact_index, timestamp, config.merge_artifacts_gap);
+    
     S(sub_num).artifact_onset.velocity = vel(artifact_index.onset);
     S(sub_num).artifact_onset.vel_timestamp = timestamp(artifact_index.onset);
     S(sub_num).artifact_onset.sample = pupil(artifact_index.onset);
@@ -287,8 +293,6 @@ for k=1:config.iterations
     S(sub_num).artifact_offset.smp_timestamp = timestamp(artifact_index.offset);
     %% interpolate - future changes - use "averages" around the timepoints instead of the single value for the timepoints
     for j=1:length(artifact_index.onset)
-        
-        
         if timestamp(artifact_index.offset(j))-timestamp(artifact_index.onset(j)) > config.max_artifact_duration
             %don't do anything if interpolation region is greater than 5
             %seconds
@@ -391,6 +395,26 @@ else
     switch sub_field_name
         case 'max_artifact_treatment'
             config.max_artifact_treatment = regexprep(lower(config.max_artifact_treatment),' ','');     % convert to lowercase and strip spaces within
+    end
+end
+end
+
+function index = merge_gaps(index, timestamp, gap_duration)
+
+% Fill in gaps between artifacts that are less than user-determined
+% spec
+num = 2;        % start with 2nd onset/offset pair
+
+while num <= numel(index.onset)
+    if timestamp(index.onset(num)) - timestamp(index.offset(num - 1)) <= gap_duration
+        % deleting the previous offset and the current onset merges
+        % the two artifacts plus the gap
+        index.onset(num) = [];
+        index.offset(num - 1) = [];
+        % do not update invalid_num - deletion of a onset/offset pair
+        % decreases numel(index.onset) value
+    else
+        num = num + 1;
     end
 end
 end
