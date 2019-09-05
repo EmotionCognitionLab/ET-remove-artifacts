@@ -289,32 +289,42 @@ for k=1:config.iterations
     for j=1:length(artifact_index.onset)
         
         
-        if timestamp(artifact_index.offset(j))-timestamp(artifact_index.onset(j)) > 60
+        if timestamp(artifact_index.offset(j))-timestamp(artifact_index.onset(j)) > config.max_artifact_duration
             %don't do anything if interpolation region is greater than 5
             %seconds
-        else
-            t2 = artifact_index.onset(j);
-            t3 = artifact_index.offset(j);
-            t1 = t2-t3+t2;
-            t4 = t3-t2+t3;
-            if t1 <= 0
-                t1 =1;
+            switch config.max_artifact_treatment
+                case 'ignore'
+                    % don't do anything this iteration
+                    continue
+                case 'nanimpute'
+                    % impute samples between onset and offset with NaN,
+                    % then continue
+                    pupil(artifact_index.onset(j):artifact_index.offset(j)) = NaN;
+                case 'interpolate'
+                    % run interpolation
             end
-            if t4 > numel(pupil)
-                t4 = numel(pupil);
-            end
-            if t3 < t2
-                continue
-            end
-            if t1 == t2 || t2 == t3 || t3 == t4
-                continue
-            end
-            x = [t1,t2,t3,t4];
-            v = [pupil(t1),pupil(t2),pupil(t3),pupil(t4)];
-            xq = t2:t3;
-            vq = interp1(x,v,xq,'linear');
-            pupil(t2:t3) = vq;
         end
+        t2 = artifact_index.onset(j);
+        t3 = artifact_index.offset(j);
+        t1 = t2-t3+t2;
+        t4 = t3-t2+t3;
+        if t1 <= 0
+            t1 =1;
+        end
+        if t4 > numel(pupil)
+            t4 = numel(pupil);
+        end
+        if t3 < t2
+            continue
+        end
+        if t1 == t2 || t2 == t3 || t3 == t4
+            continue
+        end
+        x = [t1,t2,t3,t4];
+        v = [pupil(t1),pupil(t2),pupil(t3),pupil(t4)];
+        xq = t2:t3;
+        vq = interp1(x,v,xq,'linear');
+        pupil(t2:t3) = vq;
     end
     
     %% Update Data structure S to be outputted
@@ -377,5 +387,10 @@ if ~isfield(config,sub_field_name) || isempty(config.(sub_field_name))
             default_value = 'ignore';
     end
     config.(sub_field_name) = default_value;
+else
+    switch sub_field_name
+        case 'max_artifact_treatment'
+            config.max_artifact_treatment = regexprep(lower(config.max_artifact_treatment),' ','');     % convert to lowercase and strip spaces within
+    end
 end
 end
