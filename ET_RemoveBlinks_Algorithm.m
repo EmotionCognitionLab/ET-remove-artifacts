@@ -243,6 +243,16 @@ for k=1:config.iterations
         invalid_index.onset = invalid_index.onset - front_padding_indices;
         invalid_index.offset = invalid_index.offset + rear_padding_indices;
         
+        % Check that padding doesn't exceed num of samples
+        for invalid_num = 1:numel(invalid_index.onset)
+            if invalid_index.onset(invalid_num) < 1                 % replace index with 1 if front-padding brought it to a non-positive number
+                invalid_index.onset(invalid_num) = 1;
+            end
+            if invalid_index.offset(invalid_num) > numel(pupil)     % replace index with numel(pupil) if rear-padding brought it to greater than number of pupil samples
+                invalid_index.offset(invalid_num) = numel(pupil);
+            end
+        end
+        
         % Fill in invalid gap durations less than user-specified
         invalid_index = merge_gaps(invalid_index, timestamp, config.merge_invalids_gap);
         
@@ -251,12 +261,6 @@ for k=1:config.iterations
         % around it).
         invalid_array_indices = [];
         for invalid_num = 1:numel(invalid_index.onset)
-            if invalid_index.onset(invalid_num) < 1                 % replace index with 1 if front-padding brought it to a non-positive number
-                invalid_index.onset(invalid_num) = 1;
-            end
-            if invalid_index.offset(invalid_num) > numel(pupil)     % replace index with numel(pupil) if rear-padding brought it to greater than number of pupil samples
-                invalid_index.offset(invalid_num) = numel(pupil);
-            end
             invalid_array_indices = [invalid_array_indices invalid_index.onset(invalid_num):invalid_index.offset(invalid_num)];
         end
         invalid_array = zeros(numel(pupil),1);
@@ -291,6 +295,7 @@ for k=1:config.iterations
     S(sub_num).artifact_offset.vel_timestamp = timestamp(artifact_index.offset);
     S(sub_num).artifact_offset.sample = pupil(artifact_index.offset);
     S(sub_num).artifact_offset.smp_timestamp = timestamp(artifact_index.offset);
+    
     %% interpolate - future changes - use "averages" around the timepoints instead of the single value for the timepoints
     for j=1:length(artifact_index.onset)
         if timestamp(artifact_index.offset(j))-timestamp(artifact_index.onset(j)) > config.max_artifact_duration
