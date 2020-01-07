@@ -25,7 +25,7 @@ function S = ET_RemoveBlinks_Algorithm(S, varargin)
 % NaNs.
 %
 % This function is called within ET_ReconstructPlots_GUI.m whenever user
-% presses the pushbutton "Filter Blinks". This function can also be called 
+% presses the pushbutton "Filter Blinks". This function can also be called
 % as a standalone function.
 %
 % Author: Ringo Huang (ringohua@usc.edu)
@@ -33,91 +33,189 @@ function S = ET_RemoveBlinks_Algorithm(S, varargin)
 %% Unpack arguments
 narginchk(1,2);
 if nargin == 1
-    config = struct;
+    config = struct;        % If no config is specified
 elseif nargin == 2
-    config = varargin{1};
+    config = varargin{1};   % If config is specified
 end
 
-if ~isfield(config,'hann_win') || isempty(config.hann_win)
-    config.hann_win = 11;
-end
-if ~isfield(config,'resample_rate') || isempty(config.resample_rate)
-    config.resample_rate = 120;
-end
-if ~isfield(config,'resample_multiplier') || isempty(config.resample_multiplier)
-    if config.resample_multiplier <= 0
-        error('Resample Multiplier cannot be less than or equal to 0');
-    end
-    config.resample_multiplier = 1;
-end
-if ~isfield(config,'pos_threshold_multiplier') || isempty(config.pos_threshold_multiplier)
-    config.pos_threshold_multiplier = 1;
-end
-if ~isfield(config,'neg_threshold_multiplier') || isempty(config.neg_threshold_multiplier)
-    config.neg_threshold_multiplier = 1;
-end
+% General Preprocessing:
+config = check_sub_field_and_assign_default(config, 'resample_rate');
+config = check_sub_field_and_assign_default(config, 'resample_multiplier');
+
+% Detect Blinks:
+config = check_sub_field_and_assign_default(config, 'detect_blinks');
+config = check_sub_field_and_assign_default(config, 'hann_window');
+config = check_sub_field_and_assign_default(config, 'filter_order');
+config = check_sub_field_and_assign_default(config, 'peak_boundary_threshold');
+config = check_sub_field_and_assign_default(config, 'trough_boundary_threshold');
+config = check_sub_field_and_assign_default(config, 'passband_freq');
+config = check_sub_field_and_assign_default(config, 'stopband_freq');
+config = check_sub_field_and_assign_default(config, 'peak_threshold_factor');
+config = check_sub_field_and_assign_default(config, 'trough_threshold_factor');
+config = check_sub_field_and_assign_default(config, 'pos_threshold_multiplier');
+config = check_sub_field_and_assign_default(config, 'neg_threshold_multiplier');
+
+% Detect Invalid Samples:
+config = check_sub_field_and_assign_default(config, 'detect_invalid_samples');
+config = check_sub_field_and_assign_default(config, 'front_padding');
+config = check_sub_field_and_assign_default(config, 'rear_padding');
+config = check_sub_field_and_assign_default(config, 'merge_invalids_gap');
+
+% Interpolation Options:
+config = check_sub_field_and_assign_default(config, 'merge_artifacts_gap');
+config = check_sub_field_and_assign_default(config, 'max_artifact_duration');
+config = check_sub_field_and_assign_default(config, 'max_artifact_treatment');
+
+% Other:
 if ~isfield(config,'sub_nums') || isempty(config.sub_nums)
-    config.sub_nums = 1:numel(S);
+    config.sub_nums = 1:numel(S);                   % run on all S_nums
     config.iterations = numel(S);
 else
-    config.iterations = numel(config.sub_nums);
+    config.iterations = numel(config.sub_nums);     % run only user-specified sub_nums
 end
 
 
 for k=1:config.iterations
     sub_num = config.sub_nums(k);
-    pupil = S(sub_num).data.sample;
-    timestamp = S(sub_num).data.smp_timestamp;
-    resample_multiplier = config.resample_multiplier;
     
-    %% Resample data and save resampled data to data structure S
-    [pupil,timestamp] = resample(pupil,timestamp,config.resample_rate*resample_multiplier,1,1);  %resample data  
+    %% Resample data sub_fields
+    if isfield(S(sub_num),'data')
+        if isfield(S(sub_num).data,'smp_timestamp')
+            if isfield(S(sub_num).data,'sample')
+                [pupil,timestamp] = resample(S(sub_num).data.sample, S(sub_num).data.smp_timestamp,config.resample_rate*config.resample_multiplier,1,1);    % resample sample
+                S(sub_num).resampled.sample = pupil;
+                S(sub_num).resampled.smp_timestamp = timestamp;
+            else
+                error('Could not find "sample" sub-field.');
+            end
+            if isfield(S(sub_num).data,'valid')
+                if islogical(S(sub_num).data.valid)
+                    S(sub_num).data.valid = double(S(sub_num).data.valid);      % convert logical array to double for resample fn to work
+                end
+                valid = round(resample(S(sub_num).data.valid, S(sub_num).data.smp_timestamp,config.resample_rate*config.resample_multiplier,1,1));                 % resample valid; also, round binarizes the resampled "logical" array
+                
+                S(sub_num).resampled.valid = valid;
+            else
+                % Not critical if "valid" is missing
+            end
+        else
+            error('Could not find "smp_timestamp" field.');
+        end
+    else
+        error('Could not find "data" sub-field.');
+    end
     
-    S(sub_num).resampled.sample = pupil;                        %need this for plotting in the GUI
-    S(sub_num).resampled.smp_timestamp = timestamp;
-     
-    %% Generate velocity profile
-    w1=hann(config.hann_win*resample_multiplier)/sum(hanning(config.hann_win*resample_multiplier));     %create hanning window (default is 11 point)
-    pupil_smoothed=conv(pupil,w1,'same');                       %smoothed pupil signal
-    vel=diff(pupil_smoothed)./diff(timestamp);                  %velocity profile
+    %% Detect Blinks
+    % Generate velocity profile using differentiator FIR filter
+    
+    
+    d = designfilt('differentiatorfir','FilterOrder',config.filter_order, ...
+        'PassbandFrequency',config.passband_freq,'StopbandFrequency',config.stopband_freq, ...
+        'SampleRate',config.resample_rate);
+    
+    dt = timestamp(2)-timestamp(1);
+    
+    delay = mean(grpdelay(d));
+    pupil_pad = [repmat(pupil(1),delay,1); pupil; repmat(pupil(end),delay,1)];      % add 2*delay number of samples of the first pupil_smoothed value to beginning
+    
+    vel = filter(d,pupil_pad)/dt;
+        
+    vel(1:2*delay) = [];
     
     S(sub_num).velocity.velocity = vel;
-    S(sub_num).velocity.vel_timestamp = timestamp(1:end-1);
+    S(sub_num).velocity.vel_timestamp = timestamp;
     
-    %% Find blink onset/blink offset index using vel
-    neg_threshold = mean(vel)-config.neg_threshold_multiplier*std(vel);
-    greater_neg = vel >= neg_threshold;
-    less_neg = vel < neg_threshold;
-    greater_neg(2:end+1) = greater_neg;
-    less_neg(end+1) = less_neg(end);
-    blink_index.onset = find(greater_neg&less_neg);
-
-    pos_threshold = mean(vel)+config.pos_threshold_multiplier*std(vel);
-    greater_pos = vel > pos_threshold;
-    less_pos = vel <= pos_threshold;
-    greater_pos(2:end+1) = greater_pos;
-    less_pos(end+1) = less_pos(end);
-    blink_index.offset = find(greater_pos&less_pos);
+    % Detect peak, troughs, and their boundaries
+    [peak,peak_loc] = findpeaks(vel);
+    [trough,trough_loc] = findpeaks(-vel);
+    trough = - trough;
     
-    i=1;
-    while i<numel(blink_index.offset) && i<numel(blink_index.onset)
-        if blink_index.onset(i)<blink_index.offset(i)
-            if blink_index.onset(i+1)>blink_index.offset(i)
-                i=i+1;
-            elseif blink_index.onset(i+1)<=blink_index.offset(i)
-                blink_index.onset(i+1) = [];
-            end
-        elseif blink_index.onset(i)>=blink_index.offset(i)
-            blink_index.offset(i) = [];
+    % Find outlier peaks/troughs - these are the "artifact" peaks/troughs
+    peak_outlier_la = isoutlier(peak,'ThresholdFactor',config.peak_threshold_factor) & peak > 0;
+    trough_outlier_la = isoutlier(trough,'ThresholdFactor',config.trough_threshold_factor) & trough < 0;
+    
+    peak_outlier = peak(peak_outlier_la);
+    peak_loc_outlier = peak_loc(peak_outlier_la);
+    trough_outlier = trough(trough_outlier_la);
+    trough_loc_outlier = trough_loc(trough_outlier_la);
+    
+    % Find boundaries of "artifact" peaks/troughs (sample with sign change or trough, whichever comes first)
+    neg_locs = find(vel < config.peak_boundary_threshold);
+    pos_locs = find(vel > config.trough_boundary_threshold);
+    
+    peak_start_loc = [];
+    peak_end_loc = [];
+    for i = 1:numel(peak_loc_outlier)
+        neg_locs_index = find(neg_locs > peak_loc_outlier(i),1,'first');
+        if isempty(neg_locs_index)
+            continue
         end
+        if neg_locs_index > 1
+            peak_start_loc(i) = neg_locs(neg_locs_index-1);
+        else
+            peak_start_loc(i) = 1;
+        end
+        peak_end_loc(i) = neg_locs(neg_locs_index);
+        
+        % Non-outlier troughs that come before or after peak_loc_outlier(i)
+        start_trough_loc = trough_loc(find(trough_loc < peak_loc_outlier(i),1,'last'));
+        end_trough_loc = trough_loc(find(trough_loc > peak_loc_outlier(i),1,'first'));
+        
+        % Check if a trough comes before; replace peak_start_loc with trough if
+        % so
+        if peak_start_loc(i) < start_trough_loc
+            peak_start_loc(i) = start_trough_loc;
+        end
+        if peak_end_loc(i) > end_trough_loc
+            peak_end_loc(i) = end_trough_loc;
+        end
+        
     end
     
-    if numel(blink_index.onset) > numel(blink_index.offset)
-        blink_index.onset(numel(blink_index.offset)+1:end) = [];
-    elseif numel(blink_index.onset) < numel(blink_index.offset)
-        blink_index.offset(numel(blink_index.onset)+1:end) = [];
+    trough_start_loc = [];
+    trough_end_loc = [];
+    for i = 1:numel(trough_loc_outlier)
+        pos_locs_index = find(pos_locs > trough_loc_outlier(i),1,'first');
+        if isempty(pos_locs_index)
+            continue
+        end
+        if pos_locs_index > 1
+            trough_start_loc(i) = pos_locs(pos_locs_index-1);
+        else
+            trough_start_loc(i) = 1;
+        end
+        trough_end_loc(i) = pos_locs(pos_locs_index);
+        
+        % Non-outlier peaks that come before or after peak_loc_outlier(i)
+        start_peak_loc = peak_loc(find(peak_loc < trough_loc_outlier(i),1,'last'));
+        end_peak_loc = peak_loc(find(peak_loc > trough_loc_outlier(i),1,'first'));
+        
+        % Check if a trough comes before; replace peak_start_loc with trough if
+        % so
+        if trough_start_loc(i) < start_peak_loc
+            trough_start_loc(i) = start_peak_loc;
+        end
+        if trough_end_loc(i) > end_peak_loc
+            trough_end_loc(i) = end_peak_loc;
+        end
+        
     end
     
+    % Merge boundaries
+    start_boundary = [peak_start_loc trough_start_loc];
+    end_boundary = [peak_end_loc trough_end_loc];
+    blink_array = zeros(numel(pupil),1);
+    for i = 1:numel(start_boundary)
+        blink_array(start_boundary(i):end_boundary(i)) = 1;
+    end
+    
+    blink_la_diff = diff([0; blink_array]);
+    
+    blink_index.onset = find(blink_la_diff == 1);
+    blink_index.offset  = find(blink_la_diff == -1)-1;
+    
+    
+    % Save to structure
     S(sub_num).blink_onset.velocity = vel(blink_index.onset);
     S(sub_num).blink_onset.vel_timestamp = timestamp(blink_index.onset);
     S(sub_num).blink_onset.sample = pupil(blink_index.onset);
@@ -128,37 +226,200 @@ for k=1:config.iterations
     S(sub_num).blink_offset.sample = pupil(blink_index.offset);
     S(sub_num).blink_offset.smp_timestamp = timestamp(blink_index.offset);
     
+    
+    %% Detect Invalids
+    invalid_array = zeros(numel(pupil),1);      % initiate invalid_array as an array of zeros of same length as pupil array; will replace if "valid" is detected as part of the data structure
+    
+    if isfield(S(sub_num).data, 'valid') && ~isempty(S(sub_num).data.valid)
+        
+        invalid_array = ~valid;
+        invalid_diff = diff([0; invalid_array; 0]);     % pad front and rear with a zero
+        invalid_index.onset = find(invalid_diff == 1);
+        invalid_index.offset = find(invalid_diff == -1) - 1;
+        
+        % Add padding to the onset/offsets
+        front_padding_indices = round(config.front_padding/(timestamp(2)-timestamp(1)));
+        rear_padding_indices = round(config.rear_padding/(timestamp(2)-timestamp(1)));
+        invalid_index.onset = invalid_index.onset - front_padding_indices;
+        invalid_index.offset = invalid_index.offset + rear_padding_indices;
+        
+        % Check that padding doesn't exceed num of samples
+        for invalid_num = 1:numel(invalid_index.onset)
+            if invalid_index.onset(invalid_num) < 1                 % replace index with 1 if front-padding brought it to a non-positive number
+                invalid_index.onset(invalid_num) = 1;
+            end
+            if invalid_index.offset(invalid_num) > numel(pupil)     % replace index with numel(pupil) if rear-padding brought it to greater than number of pupil samples
+                invalid_index.offset(invalid_num) = numel(pupil);
+            end
+        end
+        
+        % Fill in invalid gap durations less than user-specified
+        invalid_index = merge_gaps(invalid_index, timestamp, config.merge_invalids_gap);
+        
+        % Create invalid array (event if there's overlap of invalid regions
+        % - due to padding - the way matlab assigns values to array gets
+        % around it).
+        invalid_array_indices = [];
+        for invalid_num = 1:numel(invalid_index.onset)
+            invalid_array_indices = [invalid_array_indices invalid_index.onset(invalid_num):invalid_index.offset(invalid_num)];
+        end
+        invalid_array = zeros(numel(pupil),1);
+        invalid_array(invalid_array_indices) = 1;
+
+        S(sub_num).invalid_onset.velocity = vel(invalid_index.onset);
+        S(sub_num).invalid_onset.vel_timestamp = timestamp(invalid_index.onset);
+        S(sub_num).invalid_onset.sample = pupil(invalid_index.onset);
+        S(sub_num).invalid_onset.smp_timestamp = timestamp(invalid_index.onset);
+        
+        S(sub_num).invalid_offset.velocity = vel(invalid_index.offset);
+        S(sub_num).invalid_offset.vel_timestamp = timestamp(invalid_index.offset);
+        S(sub_num).invalid_offset.sample = pupil(invalid_index.offset);
+        S(sub_num).invalid_offset.smp_timestamp = timestamp(invalid_index.offset);
+    end
+    
+    %% Merge blink_index and invalid_index to create artifact_index
+    artifact_array = invalid_array*config.detect_invalid_samples | blink_array*config.detect_blinks;      % if the tag for detect blink or detect invalid is 0, then the array contributes no weight to artifact_array
+    artifact_diff = diff([0; artifact_array; 0]);
+    artifact_index.onset = find(artifact_diff == 1);
+    artifact_index.offset = find(artifact_diff == -1) - 1;
+    
+    % Fill in invalid gap durations less than user-specified
+    artifact_index = merge_gaps(artifact_index, timestamp, config.merge_artifacts_gap);
+    
+    S(sub_num).artifact_onset.velocity = vel(artifact_index.onset);
+    S(sub_num).artifact_onset.vel_timestamp = timestamp(artifact_index.onset);
+    S(sub_num).artifact_onset.sample = pupil(artifact_index.onset);
+    S(sub_num).artifact_onset.smp_timestamp = timestamp(artifact_index.onset);
+    
+    S(sub_num).artifact_offset.velocity = vel(artifact_index.offset);
+    S(sub_num).artifact_offset.vel_timestamp = timestamp(artifact_index.offset);
+    S(sub_num).artifact_offset.sample = pupil(artifact_index.offset);
+    S(sub_num).artifact_offset.smp_timestamp = timestamp(artifact_index.offset);
+    
     %% interpolate - future changes - use "averages" around the timepoints instead of the single value for the timepoints
-    for j=1:length(blink_index.onset)
-        if timestamp(blink_index.offset(j))-timestamp(blink_index.onset(j)) > 5
+    for j=1:length(artifact_index.onset)
+        if timestamp(artifact_index.offset(j))-timestamp(artifact_index.onset(j)) > config.max_artifact_duration
             %don't do anything if interpolation region is greater than 5
             %seconds
-        else
-            t2 = blink_index.onset(j);
-            t3 = blink_index.offset(j);
-            t1 = t2-t3+t2;
-            t4 = t3-t2+t3;
-            if t1 <= 0
-                t1 =1;
+            switch config.max_artifact_treatment
+                case 'ignore'
+                    % don't do anything this iteration
+                    continue
+                case 'nanimpute'
+                    % impute samples between onset and offset with NaN,
+                    % then continue
+                    pupil(artifact_index.onset(j):artifact_index.offset(j)) = NaN;
+                case 'interpolate'
+                    % run interpolation
             end
-            if t4 > numel(pupil)
-                t4 = numel(pupil);
-            end
-            if t3 < t2
-                continue
-            end
-            if t1 == t2 || t2 == t3 || t3 == t4
-                continue
-            end
-            x = [t1,t2,t3,t4];
-            v = [pupil(t1),pupil(t2),pupil(t3),pupil(t4)];
-            xq = t2:t3;
-            vq = interp1(x,v,xq,'linear');
-            pupil(t2:t3) = vq;
         end
+        t2 = artifact_index.onset(j);
+        t3 = artifact_index.offset(j);
+        t1 = t2-t3+t2;
+        t4 = t3-t2+t3;
+        if t1 <= 0
+            t1 =1;
+        end
+        if t4 > numel(pupil)
+            t4 = numel(pupil);
+        end
+        if t3 < t2
+            continue
+        end
+        if t1 == t2 || t2 == t3 || t3 == t4
+            continue
+        end
+        x = [t1,t2,t3,t4];
+        v = [pupil(t1),pupil(t2),pupil(t3),pupil(t4)];
+        xq = t2:t3;
+        vq = interp1(x,v,xq,'linear');
+        pupil(t2:t3) = vq;
     end
     
     %% Update Data structure S to be outputted
     S(sub_num).reconstructed.sample = pupil;
     S(sub_num).reconstructed.smp_timestamp = timestamp;
+end
+end
+
+%% Nested functions
+function config = check_sub_field_and_assign_default(config, sub_field_name)
+% Checks that sub_field of config exists and is populated; If it's
+% invalid, assign default value
+%
+% Note: define default values for each sub_field parameter here
+
+if ~isfield(config,sub_field_name) || isempty(config.(sub_field_name))
+    switch sub_field_name
+        case 'resample_rate'
+            default_value = 120;
+        case 'resample_multiplier'
+            if config.resample_multiplier <= 0
+                error('Resample Multiplier cannot be less than or equal to 0');
+            end
+            default_value = 1;
+        case 'detect_blinks'
+            default_value = 1;      % enable detect blinks by default
+        case 'hann_window'
+            default_value = 11;
+        case 'filter_order'
+            default_value = 20;
+        case 'peak_boundary_threshold'
+            default_value = 0;
+        case 'trough_boundary_threshold'
+            default_value = 0;
+        case 'passband_freq'        % change to be more robust
+            default_value = 10;            
+        case 'stopband_freq'        % change to be more robust
+            default_value = 12;
+        case 'peak_threshold_factor'        % change to be more robust
+            default_value = 1;
+        case 'trough_threshold_factor'        % change to be more robust
+            default_value = 1;             
+        case 'pos_threshold_multiplier'
+            default_value = 1;
+        case 'neg_threshold_multiplier'
+            default_value = 1;
+        case 'detect_invalid_samples'
+            default_value = 0;      % disable detect invalid samples by default
+        case 'front_padding'
+            default_value = 0;      % default is 0 s
+        case 'rear_padding'
+            default_value = 0;      % default is 0 s
+        case 'merge_invalids_gap'
+            default_value = 0;      % default is 0 s
+        case 'merge_artifacts_gap'
+            default_value = 0;
+        case 'max_artifact_duration'
+            default_value = 0;
+        case 'max_artifact_treatment'
+            default_value = 'ignore';
+    end
+    config.(sub_field_name) = default_value;
+else
+    switch sub_field_name
+        case 'max_artifact_treatment'
+            config.max_artifact_treatment = regexprep(lower(config.max_artifact_treatment),' ','');     % convert to lowercase and strip spaces within
+    end
+end
+end
+
+function index = merge_gaps(index, timestamp, gap_duration)
+
+% Fill in gaps between artifacts that are less than user-determined
+% spec
+num = 2;        % start with 2nd onset/offset pair
+
+while num <= numel(index.onset)
+    if timestamp(index.onset(num)) - timestamp(index.offset(num - 1)) <= gap_duration
+        % deleting the previous offset and the current onset merges
+        % the two artifacts plus the gap
+        index.onset(num) = [];
+        index.offset(num - 1) = [];
+        % do not update invalid_num - deletion of a onset/offset pair
+        % decreases numel(index.onset) value
+    else
+        num = num + 1;
+    end
+end
 end

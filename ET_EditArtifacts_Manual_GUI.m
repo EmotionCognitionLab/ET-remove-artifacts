@@ -17,14 +17,14 @@ narginchk(1,1);
 
 figure_handle2 = figure('Position',[100,100,800,500],...
     'Name','Artifact Reconstruction',...
-    'WindowStyle','Modal',...
+    'WindowStyle','Normal',...      %switch to modal
     'WindowKeyPressFcn',@keypress_call,...
     'CloseRequestFcn',@closefigure_call);
 set(figure_handle2,'SizeChangedFcn',@resizefigure_call)
 h2 = guihandles(figure_handle2);
 
 %% Store data into handle
-sub_num = h1.sub_num;
+sub_num = h1.sub_index;
 h2.data.smp_timestamp = h1.S(sub_num).data.smp_timestamp;
 h2.data.sample = h1.S(sub_num).data.sample;
 h2.resampled.smp_timestamp = h1.S(sub_num).resampled.smp_timestamp;

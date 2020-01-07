@@ -9,13 +9,15 @@ This branch is an earlier version of the ET Remove Artifacts tool that is writte
 
 Download the .m files in this repository to your local drive, making sure that they are located in the same directory.
 
+The project is written and tested on Matlab 2019a. Probably won't work on earlier versions of Matlab due to use of uicomponents.
+
 I recommend using Windows for complete functionality. I have tested the GUI on a Mac, but noticed some minor issues (e.g., cosmetic stuff and hotkey functionality in the plot editor).
 
 ## How To Preprocess Your Pupil Data
 
 This section shows where the ET-remove-artifacts GUI fits into my typical pupil preprocessing workflow.
 
-I personally prefer Matlab for all my data-crunching needs. However, the only prerequisite to using this GUI in your pipeline is that your data needs to be saved in a Matlab data structure that the GUI can read (more on this in the next section). 
+I personally prefer Matlab for all my data-crunching needs. However, the only prerequisite to using this GUI in your pipeline is that your data needs to be saved in a Matlab data structure that the GUI can read (more on this in the next section).
 
 Here is an example of my typical pupil preprocessing pipeline:
 
@@ -38,7 +40,7 @@ Reading in your raw data to a Matlab data structure is the only programming step
 
 ### Getting Started
 
-To start up the GUI, run the ET_ReconstructPlots_GUI.m file from your Matlab command window. After the GUI appears, click the "Select Data" button to load in your .mat file. 
+To start up the GUI, run the ET_ReconstructPlots_GUI.m file from your Matlab command window. After the GUI appears, click the "Select Data" button to load in your .mat file.
 
 ![GUI Start Up](/docs/start_up_gui.PNG?raw=true)
 
@@ -112,7 +114,7 @@ To make this editing process more convenient, the plot editing tools are bound t
 Some of the common cases that you would come across when editing your plots:
 * An artifact in your signal that is untreated by the algorithm - select endpoints around the artifact and interpolate.
 * An artifact in your signal is treated by the algorithm, but poorly done - select endpoints around the algorithm's interpolated region and re-populate the data. Then reselect the endpoints to better capture the artifact and interpolate over the reselected endpoints.
-* An artifact or series of artifacts that is greater than 2-seconds in duration - select endpoints that cover this region of "messy" signal and replace with NaNs. 
+* An artifact or series of artifacts that is greater than 2-seconds in duration - select endpoints that cover this region of "messy" signal and replace with NaNs.
 
 Load Example_Data_Final.mat to see what the final cleaned pupil data looks like after going through the entire algorithm + edit process.
 
@@ -129,7 +131,7 @@ When using this GUI, I suggest saving your output data structure under a differe
 
 The blink removal algorithm is based on the process described by Sebastiaan Mathot: www.researchgate.net/publication/236268543_A_simple_way_to_reconstruct_pupil_size_during_eye_blinks
 
-For typical behavioral studies, the acquired pupillometry data is a slowly varying signal with occasional phasic changes in response to behavioral events. This slowly varying signal is interrupted by intermittent blink artifacts, which are characterized as a sudden decrease in pupil size followed by a sudden increase. Thus, we're able to detect blink events by looking at the velocity plot of the pupil signal. During periods of slowly changing signal, the velocity fluctuates around 0. In contrast, blink onsets are characterized by large negative velocities and blink offsets are characterized by large positive velocities. 
+For typical behavioral studies, the acquired pupillometry data is a slowly varying signal with occasional phasic changes in response to behavioral events. This slowly varying signal is interrupted by intermittent blink artifacts, which are characterized as a sudden decrease in pupil size followed by a sudden increase. Thus, we're able to detect blink events by looking at the velocity plot of the pupil signal. During periods of slowly changing signal, the velocity fluctuates around 0. In contrast, blink onsets are characterized by large negative velocities and blink offsets are characterized by large positive velocities.
 
 Steps:
    1. Resample data
@@ -145,6 +147,6 @@ The tools in this repository and the preprocessing steps described above are des
 
 * **Ringo Huang** - ringohua ***at*** usc ***dot*** edu
 
-Feel free to reach out to me with questions regarding this tool or pupil preprocessing. Good luck! 
+Feel free to reach out to me with questions regarding this tool or pupil preprocessing. Good luck!
 
 :alien::telephone_receiver::house_with_garden:
