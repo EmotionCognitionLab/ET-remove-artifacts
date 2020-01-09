@@ -2,9 +2,6 @@
 
 This tool is designed to help preprocess pupil signal from any eye-tracker (ET). This tool includes an automatic blink removal algorithm and a manual plot editor.
 
-## Pre-2019a Branch
-This branch is an earlier version of the ET Remove Artifacts tool that is written and tested on Matlab 2017a/b. This does not contain any of the appdesigner elements that requires Matlab 2019a or later. Continue with this branch if using a pre-2019 version of Matlab.
-
 ## Prerequisites
 
 Download the .m files in this repository to your local drive, making sure that they are located in the same directory.
