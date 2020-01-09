@@ -39,12 +39,12 @@ Reading in your raw data to a Matlab data structure is the only programming step
 
 To start up the GUI, run the ET_ReconstructPlots_GUI.m file from your Matlab command window. After the GUI appears, click the "Select Data" button to load in your .mat file.
 
-![GUI Start Up](/docs/start_up_gui.PNG?raw=true)
+![GUI Start Up](/docs/load_data.PNG?raw=true)
 
 
 ### Using the Automatic Blink Removal Algorithm
 
-Whenever a new dataset is displayed in your GUI, the program automatically applies the blink removal algorithm. The reconstructed data (blue) is displayed in the "Pupil Plot" axes and is overlayed on the original pupil data (green). You can toggle the buttons in the "Display Plots" panel to view and hide the plots and blink onset/offset points. You may use the Zoom-in, Zoom-out, and Pan tools to explore the plots in detail (don't use the other buttons in the menu bar).
+Whenever a new dataset is displayed in your GUI, the program automatically applies the blink removal algorithm. The output data (red) is displayed in the "Pupil Plot" axes and is overlayed on the original pupil data (green). You can toggle the buttons in the "Display Plots" panel to view and hide the plots and blink onset/offset points. You may use the Zoom-in, Zoom-out, and Pan tools to explore the plots in detail (don't use the other buttons in the menu bar).
 
 Click "Back" and "Next" to scroll through the other pupil datasets stored in your data structure. The "Index" box displays the index of your data structure that is currently being displayed.
 
