@@ -4,17 +4,15 @@ This tool is designed to help preprocess pupil signal from any eye-tracker (ET).
 
 ## Prerequisites
 
-Download the .m files in this repository to your local drive, making sure that they are located in the same directory.
+Download this repository to your local drive, making sure that the .m and .mlapp files are located in the same directory.
 
 The project is written and tested on Matlab 2019a. Probably won't work on earlier versions of Matlab due to use of uicomponents.
 
-I recommend using Windows for complete functionality. I have tested the GUI on a Mac, but noticed some minor issues (e.g., cosmetic stuff and hotkey functionality in the plot editor).
+I recommend using Windows for complete functionality. I noticed some minor issues when testing this program on a Mac (e.g., cosmetic stuff and hotkey functionality in the plot editor).
 
 ## How To Preprocess Your Pupil Data
 
 This section shows where the ET-remove-artifacts GUI fits into my typical pupil preprocessing workflow.
-
-I personally prefer Matlab for all my data-crunching needs. However, the only prerequisite to using this GUI in your pipeline is that your data needs to be saved in a Matlab data structure that the GUI can read (more on this in the next section).
 
 Here is an example of my typical pupil preprocessing pipeline:
 
@@ -25,7 +23,8 @@ Step 1 is a necessary prerequisite for using this GUI, since the GUI reads a Mat
 
 ## How To Use ET Remove Artifacts GUI
 
-Given a typical pupil signal, the blink removal algorithm detects and removes most of the blink artifacts. However, atypical artifacts (e.g., due to multiple successive blinks, hardware noise, closed eyes, rapid head movement) may remain untreated by the automated algorithm. For these, use the manual plot editor to either interpolate over the user-defined period or replace with NaNs.
+Given a typical pupil signal, the blink removal algorithm detects and removes most of the blink artifacts. However, atypical artifacts (e.g., due to multiple successive blinks, 
+hardware noise, closed eyes, rapid head movement) may remain untreated by the automated algorithm. For these, use the manual plot editor to either interpolate over the user-defined period or replace with NaNs.
 
 Hopefully, the previous section adequately explained the role of this GUI in context of the entire preprocessing pipeline. We'll now go over how to apply this tool - starting with your raw data files.
 
