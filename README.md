@@ -39,7 +39,7 @@ Reading in your raw data to a Matlab data structure is the only programming step
 
 To start up the GUI, run the ET_ReconstructPlots_GUI.m file from your Matlab command window. After the GUI appears, click the "Select Data" button to load in your .mat file.
 
-![GUI Start Up](/docs/load_data.PNG?raw=true)
+![Load Data](/docs/load_data.png?raw=true)
 
 
 ### Using the Automatic Blink Removal Algorithm
