@@ -6,11 +6,12 @@ This tool is designed to help preprocess pupil signal from any eye-tracker (ET).
 
 Download this repository to your local drive, making sure that the .m and .mlapp files are located in the same directory.
 
-The project is written and tested on Matlab 2019a. Probably won't work on earlier versions of Matlab due to use of uicomponents that were introduced in later Matlab versions.
+The version is written and tested on Matlab 2019a. **If you are using an earlier version of Matlab, please go to the pre-2019 branch of this repository.**
+The pre-2019 version contains core functionalities (e.g., blink removal and manual plot editor), but are missing some other features.
 
 I recommend using Windows for complete functionality. I noticed some minor issues when testing this program on a Mac (e.g., cosmetic stuff and hotkey functionality in the plot editor).
 
-## How To Preprocess Your Pupil Data
+## Pupil Preprocessing - Getting Started:
 
 This is an example of my typical pupil preprocessing workflow and where the ET-remove-artifacts app fits:
 
@@ -24,16 +25,20 @@ impute sections of the pupil signal with missing data indicators (NaNs).
 
 ### Formatting the Data Structure
 
-The GUI reads pupillometry data from a Matlab data structure "S". You'll store each set of pupillometry in seperate indices of this structure. 
-Please format the data structure according to these specifications: variable name "S", field "data", sub-fields "sample" and "smp_timestamp." 
-The pupil data will be stored as a numerical array in the "sample" sub-field, and its corresponding timestamps will be stored in the "smp_timestamp" sub-field. 
-The timestamp values in smp_timestamp should be in units of *seconds*. For example, S(1).data.sample accesses the pupil data for the first subject and 
-S(3).data.smp_timestamp accesses the timestamps for the third subject. After creating your data structure, save it as a .mat file using the command save('name_of_file.mat','S'). 
-Importantly, the GUI assumes the timestamps are in units of seconds (so convert the units in this step if necessary). Load in the Example_Data_Input.mat in your Matlab workspace to view an example of this data structure.
+The application loads in pupillometry data from a Matlab data structure variable S. The data structure S contains a field "data" with several sub-fields.
+The required "sample" sub-field contains the pupil values stored as a numerical array. The required "smp_timestamp" sub-field contains the timestamps (in seconds) that correspond to each pupil sample. 
+The optional "valid" sub-field contains the valid/invalid sample tag provided by some eye-trackers. 1 represents a valid sample and 0 represents an invalid sample.
 
-Reading in your raw data to a Matlab data structure is the only programming step that is absolutely necessary to use the GUI. Take a look at ET_ReadFile.m and ReadRawData_Script.m in the RawData2Structure directory to understand how the example data structure was created from its raw data files.
+Each index of data structure S can contain a different session's pupil data. For example, S(1).data.sample accesses the pupil data for the first subject and S(3).data.smp_timestamp accesses the timestamps for the third subject. 
 
-### Getting Started
+After creating your data structure, save it as a .mat file using the command save('name_of_file.mat','S'). 
+
+For a simple programatic approach to creating the data structure S from pupil data, take a look at the ET_ReadFile.m function and ReadRawData_Script.m in the RawData2Structure directory.
+
+Important notes: The smp_timestamp values need to be in units of seconds. The arrays in the "sample", "smp_timestamp", and "valid" sub-fields need to be the same size. 
+Valid values are represented by 1's - some systems report invalid samples as 1's, so make sure to invert these in that case.
+
+### Loading Data
 
 To start up the GUI, run the ET_ReconstructPlots_GUI.m file from your Matlab command window. After the GUI appears, click the "Select Data" button to load in your .mat file.
 
