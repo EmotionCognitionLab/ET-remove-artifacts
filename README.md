@@ -42,7 +42,7 @@ Valid values are represented by 1's - some systems report invalid samples as 1's
 
 To start up the GUI, run the ET_ReconstructPlots_GUI.m file from your Matlab command window. After the GUI appears, click the "Select Data" button to load in your .mat file.
 
-![Load Data](/docs/load_data.png?raw=true)
+![Load Data](/docs/load_data.gif?raw=true)
 
 
 ### Using the Automatic Blink Removal Algorithm
