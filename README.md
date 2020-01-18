@@ -6,8 +6,7 @@ This tool is designed to help preprocess pupil signal from any eye-tracker (ET).
 
 Download this repository to your local drive, making sure that the .m and .mlapp files are located in the same directory.
 
-The version is written and tested on Matlab 2019a. **If you are using an earlier version of Matlab, please go to the pre-2019 branch of this repository.**
-The pre-2019 version contains core functionalities (e.g., blink removal and manual plot editor), but are missing some other features.
+The project is written and tested on Matlab 2019a. Probably won't work on earlier versions of Matlab due to use of uicomponents that were introduced in later Matlab versions.
 
 I recommend using Windows for complete functionality. I noticed some minor issues when testing this program on a Mac (e.g., cosmetic stuff and hotkey functionality in the plot editor).
 
@@ -42,22 +41,56 @@ Valid values are represented by 1's - some systems report invalid samples as 1's
 
 To start up the GUI, run the ET_ReconstructPlots_GUI.m file from your Matlab command window. After the GUI appears, click the "Select Data" button to load in your .mat file.
 
-![Load Data](/docs/load_data.gif?raw=true)
+![Load Data](/docs/load_data.png?raw=true)
 
+### Interacting with the GUI
 
-### Using the Automatic Blink Removal Algorithm
+Whenever a new dataset is loaded, the program automatically applies the blink removal algorithm using default settings. 
+If loading a dataset that has already been run through ET-remove-artifacts, the program will simply display the previously run outputs.
+The output data (red) is displayed in the "Pupil Plot" axes and is overlayed on the original pupil data (green). You can toggle the buttons in the "Display Plots" panel to view and hide the plots and blink onset/offset points.
+To interact with the plot, hover over the axes and plot tools (Zoom-in, Zoom-out, Pan) will appear on top right of the axes.
+Click "Back" and "Next" to navigate through the other pupil datasets stored in your data structure. The "Index" box displays the index of your data structure that is currently being displayed.
 
-Whenever a new dataset is displayed in your GUI, the program automatically applies the blink removal algorithm. The output data (red) is displayed in the "Pupil Plot" axes and is overlayed on the original pupil data (green). You can toggle the buttons in the "Display Plots" panel to view and hide the plots and blink onset/offset points. You may use the Zoom-in, Zoom-out, and Pan tools to explore the plots in detail (don't use the other buttons in the menu bar).
+### Removing Blinks and Artifacts (Automated)
 
-Click "Back" and "Next" to scroll through the other pupil datasets stored in your data structure. The "Index" box displays the index of your data structure that is currently being displayed.
+This algorithm contains two possible methods of detecting artifacts that can be used either separately or together. We will go through each panel of the algorithm options here:
 
-You can also tinker with the algorithm by changing the values in the algorithm parameters panel:
+#### General Processing
+
+These should be adjusted before the options in the other panels.
+
+* Resampling Rate: typically, set this as the sampling rate of your eye-tracker
+* Resampling Multiplier: the multiplier affects the temporary sampling rate of the data passed into the algorithm. 
+The program resamples the data to the Resampling Rate*Multiplier and runs the algorithm on the temporarily resampled data. The data will then be resampled back to the original Resampling Rate.
+For eye-trackers with a very high sampling rate (e.g., > 500 Hz), downsampling your data for the algorithm would help speed up computing time. In general, downsampling to about 200 Hz would be a good amount.
+For example, if your Resampling Rate is set at 1000 Hz, you can set your Resampling Multiplier is 0.2 to get a temporary sampling rate of 200 Hz when running the algorithm.
+
+#### Detect Blinks
+
+Select this panel to detect blinks in the pupil signal.
+
+* Filter Order: Must be a even number. Larger values create a "smoother" velocity plot, but may suppress the blink velocity patterns if it is too large.
+* Passband Frequency (Hz): Filter allows frequencies less than this value to pass.
+* Stopband Frequency (Hz): Filter does not allow frequencies greater than this value to pass.
+* Peak Threshold Factor: Thresholding of a peak's amplitude in standard deviations above the mean velocity. Peaks whose amplitudes exceed this threshold are classified as an artifact peak.
+* Trough Threshold Factor: Thresholding of a troughs's amplitude in standard deviations below the mean velocity. Troughs whose amplitudes exceed this threshold are classified as an artifact trough. A "blink" is characterized as an artifact trough followed soon after by an artifact peak.
+* Velocity Threshold (+): Thresholding to find the point along the artifact peaks used to identify blink offsets. Smaller positive thresholds delays the blink offset, increasing the tail end of the interpolated region (and vice versa).
+* Velocity Threshold (-): Thresholding to find the point along the artifact troughs used to identify blink onsets. Smaller positive thresholds makes the blink onset occur earlier, increasing the front end of the interpolated region (and vice versa).
+
+(WIP - Figure of a blink profile to describe the thresholds)
+
+#### Detect Invalid Samples
+
+#### Interpolation Options
+
+### Removing Blinks and Artifacts (Manual)
+
+### Understanding the Data Structure Fields
+
 
 * Hann Window Points: this is the length (number of points) in the Hann window applied to your pupil data before generating the velocity plot. If your pupil signal is particularly noisy, you may increase this value to get a smoother velocity plot; if the magnitude of the blink signatures in your velocity plot (i.e., the sudden dip and peak) is too small, consider decreasing this value.
-* Resampling Rate: typically, set this as the sampling rate of your eye-tracker
+
 * Precision: successive blinks may be grouped together. Precision refers to the duration between the offset of one blink and the onset of the next blink that would group the two blinks as one. I recommend leaving this at 0.
-* Velocity Threshold (+): thresholding of the velocity plot used to identify blink offsets. Smaller positive thresholds delays the blink offset, increasing the tail end of the interpolated region (and vice versa).
-* Velocity Threshold (-): thresholding of the velocity plot used to identify blink onsets. Smaller negative thresholds advances the blink onset, extending the starting point of the interpolated region (and vice versa).
 
 For most cases, set your resampling rate equal to the sampling rate of your eye-tracker. The setting that I change most frequently is the *Hann Window Points*. Pupil signals with relatively large non-blink fluctuations will need a larger Hann window to generate a smoother velocity plot. I usually start with a lower value and increase the value until I see that increasing the value no longer improves the reconstructed plot meaningfully (this is subjective). I often also decrease the Velocity Thresholds (+ and -), which creates a slightly larger interpolation region. One important rule of thumb is that, for a given study run on the same eye-tracker, try to make your settings approximately similar. For instance, if you load in the Example_Data_Output.mat into the GUI, you'll notice how the Hann Window Points values fall in the 30-40 point range (on data from another one of my eye-trackers, I set this parameter between 10 and 20).
 
