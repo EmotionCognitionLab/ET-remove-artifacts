@@ -2,6 +2,8 @@
 
 This tool is designed to help preprocess pupil signal from any eye-tracker (ET). This tool includes an automatic blink removal algorithm and a manual plot editor.
 
+{:toc}
+
 ## Prerequisites
 
 Download this repository to your local drive, making sure that the .m and .mlapp files are located in the same directory.
