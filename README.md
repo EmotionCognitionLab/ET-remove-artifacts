@@ -1,8 +1,32 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [ET Remove Artifacts](#et-remove-artifacts)
+  - [Prerequisites](#prerequisites)
+  - [Pupil Preprocessing - Getting Started:](#pupil-preprocessing---getting-started)
+    - [Formatting the Data Structure](#formatting-the-data-structure)
+    - [Loading Data](#loading-data)
+    - [Interacting with the GUI](#interacting-with-the-gui)
+    - [Removing Blinks and Artifacts (Automated)](#removing-blinks-and-artifacts-automated)
+      - [General Processing](#general-processing)
+      - [Detect Blinks](#detect-blinks)
+      - [Detect Invalid Samples](#detect-invalid-samples)
+      - [Interpolation Options](#interpolation-options)
+    - [Removing Blinks and Artifacts (Manual)](#removing-blinks-and-artifacts-manual)
+    - [Understanding the Data Structure Fields](#understanding-the-data-structure-fields)
+    - [Using the Manual Plot Editor](#using-the-manual-plot-editor)
+      - [When do I replace data with NaNs rather than interpolate?](#when-do-i-replace-data-with-nans-rather-than-interpolate)
+    - [Don't Forget to Save Your Work!](#dont-forget-to-save-your-work)
+  - [How Does The Blink Removal Algorithm Work?](#how-does-the-blink-removal-algorithm-work)
+  - [Disclaimer](#disclaimer)
+  - [Author](#author)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # ET Remove Artifacts
 
 This tool is designed to help preprocess pupil signal from any eye-tracker (ET). This tool includes an automatic blink removal algorithm and a manual plot editor.
-
-{:toc}
 
 ## Prerequisites
 
