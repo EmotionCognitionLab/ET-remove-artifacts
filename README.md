@@ -4,27 +4,26 @@ This tool is designed to help preprocess pupil signal from any eye-tracker (ET).
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-***Table of Contents***
+**Table of Contents**
 
-- [ET Remove Artifacts](#et-remove-artifacts)
-  - [Prerequisites](#prerequisites)
-  - [Pupil Preprocessing - Getting Started:](#pupil-preprocessing---getting-started)
-    - [Formatting the Data Structure](#formatting-the-data-structure)
-    - [Loading Data](#loading-data)
-    - [Interacting with the GUI](#interacting-with-the-gui)
-    - [Removing Blinks and Artifacts (Automated)](#removing-blinks-and-artifacts-automated)
-      - [General Processing](#general-processing)
-      - [Detect Blinks](#detect-blinks)
-      - [Detect Invalid Samples](#detect-invalid-samples)
-      - [Interpolation Options](#interpolation-options)
-    - [Removing Blinks and Artifacts (Manual)](#removing-blinks-and-artifacts-manual)
-    - [Understanding the Data Structure Fields](#understanding-the-data-structure-fields)
-    - [Using the Manual Plot Editor](#using-the-manual-plot-editor)
-      - [When do I replace data with NaNs rather than interpolate?](#when-do-i-replace-data-with-nans-rather-than-interpolate)
-    - [Don't Forget to Save Your Work!](#dont-forget-to-save-your-work)
-  - [How Does The Blink Removal Algorithm Work?](#how-does-the-blink-removal-algorithm-work)
-  - [Disclaimer](#disclaimer)
-  - [Author](#author)
+- [Prerequisites](#prerequisites)
+- [Pupil Preprocessing - Getting Started:](#pupil-preprocessing---getting-started)
+  - [Formatting the Data Structure](#formatting-the-data-structure)
+  - [Loading Data](#loading-data)
+  - [Interacting with the GUI](#interacting-with-the-gui)
+  - [Removing Blinks and Artifacts (Automated)](#removing-blinks-and-artifacts-automated)
+    - [General Processing](#general-processing)
+    - [Detect Blinks](#detect-blinks)
+    - [Detect Invalid Samples](#detect-invalid-samples)
+    - [Interpolation Options](#interpolation-options)
+  - [Removing Blinks and Artifacts (Manual)](#removing-blinks-and-artifacts-manual)
+  - [Understanding the Data Structure Fields](#understanding-the-data-structure-fields)
+  - [Using the Manual Plot Editor](#using-the-manual-plot-editor)
+    - [When do I replace data with NaNs rather than interpolate?](#when-do-i-replace-data-with-nans-rather-than-interpolate)
+  - [Don't Forget to Save Your Work!](#dont-forget-to-save-your-work)
+- [How Does The Blink Removal Algorithm Work?](#how-does-the-blink-removal-algorithm-work)
+- [Disclaimer](#disclaimer)
+- [Author](#author)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -44,23 +43,23 @@ This is an example of my typical pupil preprocessing workflow and where the ET-r
 
 Step 1 of this workflow stores the raw pupil data in a Matlab data structure that is formatted to be compatible with the ET-Remove-Artifacts application (more on the format in the next section).
 
-Step 2 involves the ET-Remove-Artifacts application, which includes automated and manual blink removal options. The automated algorithm can detect and linearly interpolate over artifacts based on typical blink characteristics in the signal and/or 
+Step 2 involves the ET-Remove-Artifacts application, which includes automated and manual blink removal options. The automated algorithm can detect and linearly interpolate over artifacts based on typical blink characteristics in the signal and/or
 a "valid/invalid" sample tag that is provided by certain eye-tracking systems. For atypical artifacts that remain undetected or improperly treated by the algorithm, the manual plot editor can be used to either fix interpolations or
 impute sections of the pupil signal with missing data indicators (NaNs).
 
 ### Formatting the Data Structure
 
 The application loads in pupillometry data from a Matlab data structure variable S. The data structure S contains a field "data" with several sub-fields.
-The required "sample" sub-field contains the pupil values stored as a numerical array. The required "smp_timestamp" sub-field contains the timestamps (in seconds) that correspond to each pupil sample. 
+The required "sample" sub-field contains the pupil values stored as a numerical array. The required "smp_timestamp" sub-field contains the timestamps (in seconds) that correspond to each pupil sample.
 The optional "valid" sub-field contains the valid/invalid sample tag provided by some eye-trackers. 1 represents a valid sample and 0 represents an invalid sample.
 
-Each index of data structure S can contain a different session's pupil data. For example, S(1).data.sample accesses the pupil data for the first subject and S(3).data.smp_timestamp accesses the timestamps for the third subject. 
+Each index of data structure S can contain a different session's pupil data. For example, S(1).data.sample accesses the pupil data for the first subject and S(3).data.smp_timestamp accesses the timestamps for the third subject.
 
-After creating your data structure, save it as a .mat file using the command save('name_of_file.mat','S'). 
+After creating your data structure, save it as a .mat file using the command save('name_of_file.mat','S').
 
 For a simple programatic approach to creating the data structure S from pupil data, take a look at the ET_ReadFile.m function and ReadRawData_Script.m in the RawData2Structure directory.
 
-Important notes: The smp_timestamp values need to be in units of seconds. The arrays in the "sample", "smp_timestamp", and "valid" sub-fields need to be the same size. 
+Important notes: The smp_timestamp values need to be in units of seconds. The arrays in the "sample", "smp_timestamp", and "valid" sub-fields need to be the same size.
 Valid values are represented by 1's - some systems report invalid samples as 1's, so make sure to invert these in that case.
 
 ### Loading Data
@@ -71,7 +70,7 @@ To start up the GUI, run the ET_ReconstructPlots_GUI.m file from your Matlab com
 
 ### Interacting with the GUI
 
-Whenever a new dataset is loaded, the program automatically applies the blink removal algorithm using default settings. 
+Whenever a new dataset is loaded, the program automatically applies the blink removal algorithm using default settings.
 If loading a dataset that has already been run through ET-remove-artifacts, the program will simply display the previously run outputs.
 The output data (red) is displayed in the "Pupil Plot" axes and is overlayed on the original pupil data (green). You can toggle the buttons in the "Display Plots" panel to view and hide the plots and blink onset/offset points.
 To interact with the plot, hover over the axes and plot tools (Zoom-in, Zoom-out, Pan) will appear on top right of the axes.
@@ -86,7 +85,7 @@ This algorithm contains two possible methods of detecting artifacts that can be 
 These should be adjusted before the options in the other panels.
 
 * Resampling Rate: typically, set this as the sampling rate of your eye-tracker
-* Resampling Multiplier: the multiplier affects the temporary sampling rate of the data passed into the algorithm. 
+* Resampling Multiplier: the multiplier affects the temporary sampling rate of the data passed into the algorithm.
 The program resamples the data to the Resampling Rate*Multiplier and runs the algorithm on the temporarily resampled data. The data will then be resampled back to the original Resampling Rate.
 For eye-trackers with a very high sampling rate (e.g., > 500 Hz), downsampling your data for the algorithm would help speed up computing time. In general, downsampling to about 200 Hz would be a good amount.
 For example, if your Resampling Rate is set at 1000 Hz, you can set your Resampling Multiplier is 0.2 to get a temporary sampling rate of 200 Hz when running the algorithm.
