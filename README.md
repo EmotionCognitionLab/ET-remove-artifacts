@@ -7,7 +7,7 @@ This tool is designed to help preprocess pupil signal from any eye-tracker (ET).
 **Table of Contents**
 
 - [Prerequisites](#prerequisites)
-- [Pupil Preprocessing - Getting Started:](#pupil-preprocessing---getting-started)
+- [Pupil Preprocessing - Getting Started](#pupil-preprocessing---getting-started)
   - [Formatting the Data Structure](#formatting-the-data-structure)
   - [Loading Data](#loading-data)
   - [Interacting with the GUI](#interacting-with-the-gui)
@@ -35,9 +35,9 @@ The project is written and tested on Matlab 2019a. Probably won't work on earlie
 
 I recommend using Windows for complete functionality. I noticed some minor issues when testing this program on a Mac (e.g., cosmetic stuff and hotkey functionality in the plot editor).
 
-## Pupil Preprocessing - Getting Started:
+## Pupil Preprocessing - Getting Started
 
-This is an example of my typical pupil preprocessing workflow and where the ET-remove-artifacts app fits:
+This is an example pupil preprocessing workflow and where the ET-remove-artifacts app fits:
 
 ![Pipeline](/docs/preprocessing_pipeline.png?raw=true)
 
@@ -64,14 +64,14 @@ Valid values are represented by 1's - some systems report invalid samples as 1's
 
 ### Loading Data
 
-To start up the GUI, run the ET_ReconstructPlots_GUI.m file from your Matlab command window. After the GUI appears, click the "Select Data" button to load in your .mat file.
+Run ET_RemoveArtifacts_App.mlapp from the Matlab command window to start the application. To load the data, go to File -> Load data structure (see below).
+If the data has not yet been processed by ET-Remove-Artifacts, the program automatically applies the blink removal algorithm on the signal using default settings.
+If the data has previously been processed by ET-Remove-Artifacts (i.e., fields created by ET-Remove-Artifacts exist and are populated), the program will not apply blink removal and will simply display the existing outputs stored in the data structure.
 
 ![Load Data](/docs/load_data.gif?raw=true)
 
 ### Interacting with the GUI
 
-Whenever a new dataset is loaded, the program automatically applies the blink removal algorithm using default settings.
-If loading a dataset that has already been run through ET-remove-artifacts, the program will simply display the previously run outputs.
 The output data (red) is displayed in the "Pupil Plot" axes and is overlayed on the original pupil data (green). You can toggle the buttons in the "Display Plots" panel to view and hide the plots and blink onset/offset points.
 To interact with the plot, hover over the axes and plot tools (Zoom-in, Zoom-out, Pan) will appear on top right of the axes.
 Click "Back" and "Next" to navigate through the other pupil datasets stored in your data structure. The "Index" box displays the index of your data structure that is currently being displayed.
