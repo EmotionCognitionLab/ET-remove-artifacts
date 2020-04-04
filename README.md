@@ -39,7 +39,7 @@ I recommend using Windows for complete functionality. I noticed some minor issue
 
 This is an example pupil preprocessing workflow and where the ET-remove-artifacts app fits:
 
-<img src="/docs/preprocessing_pipeline.png" alt="Pupil Preprocessing Workflow" width="300">
+<img src="/docs/preprocessing_pipeline.png" alt="Pupil Preprocessing Workflow" width="340">
 
 Step 1 of this workflow stores the raw pupil data in a Matlab data structure that is formatted to be compatible with the ET-Remove-Artifacts application (more on the format in the next section).
 
@@ -55,7 +55,7 @@ The application accepts pupillometry data formatted in a Matlab data structure w
 * **SubjectNumber (recommended)**: optional subject/session labels
 * **filter_config (optional)**: optional field used if you want to configure algorithm settings different from the default
 
-<img src="/docs/data_structure_1.png" alt="Input Data Structure" width="700">
+<img src="/docs/data_structure_1.png" alt="Input Data Structure" width="730">
 
 The "data" field contains sub-fields that stores raw pupil data required for ET-Remove-Artifacts to run.
 
