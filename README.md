@@ -7,8 +7,8 @@ This tool is designed to help preprocess pupil signal from any eye-tracker (ET).
 **Table of Contents**
 
 - [Prerequisites](#prerequisites)
-- [Pupil Preprocessing - Getting Started](#pupil-preprocessing---getting-started)
-  - [Formatting the Data Structure](#formatting-the-data-structure)
+- [Pupil Preprocessing - Overview](#pupil-preprocessing---getting-started)
+  - [Formatting the Input Data Structure](#formatting-the-data-structure)
   - [Loading Data](#loading-data)
   - [Interacting with the GUI](#interacting-with-the-gui)
   - [Removing Blinks and Artifacts (Automated)](#removing-blinks-and-artifacts-automated)
@@ -35,7 +35,7 @@ The project is written and tested on Matlab 2019a. Probably won't work on earlie
 
 I recommend using Windows for complete functionality. I noticed some minor issues when testing this program on a Mac (e.g., cosmetic stuff and hotkey functionality in the plot editor).
 
-## Pupil Preprocessing - Getting Started
+## Pupil Preprocessing - Overview
 
 This is an example pupil preprocessing workflow and where the ET-remove-artifacts app fits:
 
@@ -56,6 +56,7 @@ The application accepts pupillometry data formatted in a Matlab data structure w
 * **filter_config (optional)**: optional field used if you want to configure algorithm settings different from the default
 
 ![Input Data Structure](/docs/data_structure_1.png?raw=true)
+<img src="/docs/data_structure_1.png" alt="Input Data Structure" width="500">
 
 The "data" field contains sub-fields that stores raw pupil data required for ET-Remove-Artifacts to run.
 
