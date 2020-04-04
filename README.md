@@ -47,20 +47,32 @@ Step 2 involves the ET-Remove-Artifacts application, which includes automated an
 a "valid/invalid" sample tag that is provided by certain eye-tracking systems. For atypical artifacts that remain undetected or improperly treated by the algorithm, the manual plot editor can be used to either fix interpolations or
 impute sections of the pupil signal with missing data indicators (NaNs).
 
-### Formatting the Data Structure
+### Formatting the Input Data Structure
 
-The application loads in pupillometry data from a Matlab data structure variable S. The data structure S contains a field "data" with several sub-fields.
-The required "sample" sub-field contains the pupil values stored as a numerical array. The required "smp_timestamp" sub-field contains the timestamps (in seconds) that correspond to each pupil sample.
-The optional "valid" sub-field contains the valid/invalid sample tag provided by some eye-trackers. 1 represents a valid sample and 0 represents an invalid sample.
+The application accepts pupillometry data formatted in a Matlab data structure with variable name S. The data structure S must contain a field "data" with several required and optional sub-fields. The data structure may contain pupil data from multiple sessions, where each row contains data from a different session.
 
-Each index of data structure S can contain a different session's pupil data. For example, S(1).data.sample accesses the pupil data for the first subject and S(3).data.smp_timestamp accesses the timestamps for the third subject.
+* **data (required)**: the raw pupil data
+* **SubjectNumber (recommended)**: optional subject/session labels
+* **filter_config (optional)**: optional field used if you want to configure algorithm settings different from the default
 
-After creating your data structure, save it as a .mat file using the command save('name_of_file.mat','S').
+![Input Data Structure](/docs/data_structure_1.png?raw=true)
 
-For a simple programatic approach to creating the data structure S from pupil data, take a look at the ET_ReadFile.m function and ReadRawData_Script.m in the RawData2Structure directory.
+The "data" field contains sub-fields that stores raw pupil data required for ET-Remove-Artifacts to run.
 
-Important notes: The smp_timestamp values need to be in units of seconds. The arrays in the "sample", "smp_timestamp", and "valid" sub-fields need to be the same size.
-Valid values are represented by 1's - some systems report invalid samples as 1's, so make sure to invert these in that case.
+* **sample (required)**: the raw pupil values stored as a Nx1 numerical array
+* **smp_timestamp (required)**: the sample timestamps stored as a Nx1 numerical array
+* **valid (optional)**: the valid/invalid sample tag provided by some eye-trackers stored as a Nx1 logical array (1 = valid, 0 = invalid)
+* **message (optional)**: any task event label relevant to the session
+* **msg_timestamp (optional)**: the timestamps corresponding to the event labels in "messages"
+
+![Data Structure "data" sub-field](/docs/data_structure_2.png?raw=true)
+
+After creating your data structure, save it as a .mat file (e.g., `save('name_of_file.mat','S')`).
+
+For a programmatic example of creating the data structure S from an eye-tracker's raw data file, take a look at the ET_ReadFile.m function and ReadRawData_Script.m in the RawData2Structure directory (example data from an SMI eye-tracker).
+
+**Important Notes**: The "smp_timestamp" values need to be in units of seconds. The arrays in the "sample", "smp_timestamp", and "valid" sub-fields need to be the same size.
+Valid values are represented by 1's - some eye-trackers report invalid samples as 1's, so make sure to invert these in that case.
 
 ### Loading Data
 
@@ -110,7 +122,9 @@ Select this panel to detect blinks in the pupil signal.
 
 ### Removing Blinks and Artifacts (Manual)
 
-### Understanding the Data Structure Fields
+### Understanding the Output Data structure
+
+![Output Data Structure](/docs/data_structure_3.gif?raw=true)
 
 
 * Hann Window Points: this is the length (number of points) in the Hann window applied to your pupil data before generating the velocity plot. If your pupil signal is particularly noisy, you may increase this value to get a smoother velocity plot; if the magnitude of the blink signatures in your velocity plot (i.e., the sudden dip and peak) is too small, consider decreasing this value.
