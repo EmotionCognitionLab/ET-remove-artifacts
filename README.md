@@ -39,7 +39,7 @@ I recommend using Windows for complete functionality. I noticed some minor issue
 
 This is an example pupil preprocessing workflow and where the ET-remove-artifacts app fits:
 
-<img src="/docs/preprocessing_pipeline.png" alt="Pupil Preprocessing Workflow" width="400">
+<img src="/docs/preprocessing_pipeline.png" alt="Pupil Preprocessing Workflow" width="300">
 
 Step 1 of this workflow stores the raw pupil data in a Matlab data structure that is formatted to be compatible with the ET-Remove-Artifacts application (more on the format in the next section).
 
@@ -80,8 +80,7 @@ Run ET_RemoveArtifacts_App.mlapp from the Matlab command window to start the app
 If the data has not yet been processed by ET-Remove-Artifacts, the program automatically applies the blink removal algorithm on the signal using default settings.
 If the data has previously been processed by ET-Remove-Artifacts (i.e., fields created by ET-Remove-Artifacts exist and are populated), the program will not apply blink removal and will simply display the existing outputs stored in the data structure.
 
-![Load Data](/docs/load_data.gif?raw=true)
-<img src="/docs/load_data.gif" alt="Load Data" width="700">
+<img src="/docs/load_data.gif" alt="Load Data" width="1000">
 
 ### Interacting with the GUI
 
@@ -125,7 +124,6 @@ Select this panel to detect blinks in the pupil signal.
 
 ### Understanding the Output Data structure
 
-![Output Data Structure](/docs/data_structure_3.gif?raw=true)
 <img src="/docs/data_structure_3.png" alt="Output Data Structure" width="1000">
 
 * Hann Window Points: this is the length (number of points) in the Hann window applied to your pupil data before generating the velocity plot. If your pupil signal is particularly noisy, you may increase this value to get a smoother velocity plot; if the magnitude of the blink signatures in your velocity plot (i.e., the sudden dip and peak) is too small, consider decreasing this value.
