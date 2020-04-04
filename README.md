@@ -8,7 +8,7 @@ This tool is designed to help preprocess pupil signal from any eye-tracker (ET).
 
 - [Prerequisites](#prerequisites)
 - [Pupil Preprocessing - Overview](#pupil-preprocessing---getting-started)
-  - [Formatting the Input Data Structure](#formatting-the-data-structure)
+  - [Formatting the Input Data Structure](#formatting-the-input-data-structure)
   - [Loading Data](#loading-data)
   - [Interacting with the GUI](#interacting-with-the-gui)
   - [Removing Blinks and Artifacts (Automated)](#removing-blinks-and-artifacts-automated)
