@@ -39,7 +39,7 @@ I recommend using Windows for complete functionality. I noticed some minor issue
 
 This is an example pupil preprocessing workflow and where the ET-remove-artifacts app fits:
 
-![Pipeline](/docs/preprocessing_pipeline.png?raw=true)
+<img src="/docs/preprocessing_pipeline.png" alt="Pupil Preprocessing Workflow" width="400">
 
 Step 1 of this workflow stores the raw pupil data in a Matlab data structure that is formatted to be compatible with the ET-Remove-Artifacts application (more on the format in the next section).
 
@@ -55,8 +55,7 @@ The application accepts pupillometry data formatted in a Matlab data structure w
 * **SubjectNumber (recommended)**: optional subject/session labels
 * **filter_config (optional)**: optional field used if you want to configure algorithm settings different from the default
 
-![Input Data Structure](/docs/data_structure_1.png?raw=true)
-<img src="/docs/data_structure_1.png" alt="Input Data Structure" width="500">
+<img src="/docs/data_structure_1.png" alt="Input Data Structure" width="700">
 
 The "data" field contains sub-fields that stores raw pupil data required for ET-Remove-Artifacts to run.
 
@@ -66,7 +65,7 @@ The "data" field contains sub-fields that stores raw pupil data required for ET-
 * **message (optional)**: any task event label relevant to the session
 * **msg_timestamp (optional)**: the timestamps corresponding to the event labels in "messages"
 
-![Data Structure "data" sub-field](/docs/data_structure_2.png?raw=true)
+<img src="/docs/data_structure_2.png" alt="Data Structure data sub-field" width="700">
 
 After creating your data structure, save it as a .mat file (e.g., `save('name_of_file.mat','S')`).
 
@@ -82,6 +81,7 @@ If the data has not yet been processed by ET-Remove-Artifacts, the program autom
 If the data has previously been processed by ET-Remove-Artifacts (i.e., fields created by ET-Remove-Artifacts exist and are populated), the program will not apply blink removal and will simply display the existing outputs stored in the data structure.
 
 ![Load Data](/docs/load_data.gif?raw=true)
+<img src="/docs/load_data.gif" alt="Load Data" width="700">
 
 ### Interacting with the GUI
 
@@ -126,7 +126,7 @@ Select this panel to detect blinks in the pupil signal.
 ### Understanding the Output Data structure
 
 ![Output Data Structure](/docs/data_structure_3.gif?raw=true)
-
+<img src="/docs/data_structure_3.png" alt="Output Data Structure" width="1000">
 
 * Hann Window Points: this is the length (number of points) in the Hann window applied to your pupil data before generating the velocity plot. If your pupil signal is particularly noisy, you may increase this value to get a smoother velocity plot; if the magnitude of the blink signatures in your velocity plot (i.e., the sudden dip and peak) is too small, consider decreasing this value.
 
