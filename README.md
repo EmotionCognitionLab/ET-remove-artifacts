@@ -33,7 +33,8 @@ Download this repository to your local drive, making sure that the .m and .mlapp
 
 The project is written and tested on Matlab 2019a. The application GUI might not work with older Matlab versions due to use of uicomponents that were introduced in later Matlab versions.
 
-Recommended Matlab Versions: **Matlab 2019a or later**
+Recommended Matlab Versions: **Matlab 2019-ish or later**
+
 Required Matlab Dependency: **Signal Processing Toolbox**
 
 ## Pupil Preprocessing - Overview
