@@ -27,18 +27,14 @@ This tool is designed to help preprocess pupil signal from any eye-tracker (ET).
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-## Prerequisites
+## Installation
 
 Download the installer that matches your operating system from the installers folder. Launch the downloaded installer and follow the installer instructions.
 
 For developers who want access to the source code: 
 
 Clone this repository, making sure that the .m and .mlapp files are located in the same directory. 
-The project is written and tested on Matlab 2019a. The application GUI might not work with older Matlab versions due to use of uicomponents that were introduced in later Matlab versions. Signal Processing Toolbox is a dependency.
-
-Recommended Matlab Versions: **Matlab 2019-ish or later**
-
-Required Matlab Dependency: **Signal Processing Toolbox**
+The project is written and tested on Matlab 2019a. The .mlapp file might not work with older Matlab versions due to use of uicomponents that were introduced in later Matlab versions. Signal Processing Toolbox is a dependency.
 
 ## Pupil Preprocessing - Overview
 
