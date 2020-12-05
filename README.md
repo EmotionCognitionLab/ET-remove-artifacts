@@ -34,6 +34,8 @@ For the standalone desktop version of this app, visit the [latest release page](
 If you want access to the source code or prefer running the app through Matlab, clone this repository, making sure that the .m and .mlapp files are located in the same directory. 
 The project is written and tested on Matlab 2019a. The .mlapp file might not work with older Matlab versions due to use of uicomponents that were introduced in later Matlab versions. Signal Processing Toolbox is a dependency.
 
+You may also be interested in downloading the example .mat files that demonstrates how the input data structure should be formatted and what to expect from the output.
+
 ## Pupil Preprocessing - Overview
 
 This is an example pupil preprocessing workflow and where the ET-remove-artifacts app fits:
