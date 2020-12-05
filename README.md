@@ -6,7 +6,7 @@ This tool is designed to help preprocess pupil signal from any eye-tracker (ET).
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**
 
-- [Prerequisites](#prerequisites)
+- [Installation](#installation)
 - [Pupil Preprocessing - Overview](#pupil-preprocessing---getting-started)
   - [Formatting the Input Data Structure](#formatting-the-input-data-structure)
   - [Loading Data](#loading-data)
@@ -27,15 +27,14 @@ This tool is designed to help preprocess pupil signal from any eye-tracker (ET).
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-## Prerequisites
+## Installation
 
-Download this repository to your local drive, making sure that the .m and .mlapp files are located in the same directory.
+For the standalone desktop version of this app, visit the [latest release page](https://github.com/EmotionCognitionLab/ET-remove-artifacts/releases) and download the installer file that matches your operating system. Launch the installer on your local drive and follow the instructions to complete installation (note that you may need to manually give permission for the installer to run on your computer).
 
-The project is written and tested on Matlab 2019a. The application GUI might not work with older Matlab versions due to use of uicomponents that were introduced in later Matlab versions.
+If you want access to the source code or prefer running the app through Matlab, clone this repository, making sure that the .m and .mlapp files are located in the same directory. 
+The project is written and tested on Matlab 2019a. The .mlapp file might not work with older Matlab versions due to use of uicomponents that were introduced in later Matlab versions. Signal Processing Toolbox is a dependency.
 
-Recommended Matlab Versions: **Matlab 2019-ish or later**
-
-Required Matlab Dependency: **Signal Processing Toolbox**
+You may also be interested in downloading the example .mat files that demonstrates how the input data structure should be formatted and what to expect from the output.
 
 ## Pupil Preprocessing - Overview
 
@@ -75,10 +74,10 @@ For a programmatic example of creating the data structure S from an eye-tracker'
 
 **Important Notes**: The "smp_timestamp" values need to be in units of seconds. The arrays in the "sample", "smp_timestamp", and "valid" sub-fields need to be the same size.
 Valid values are represented by 1's - some eye-trackers report invalid samples as 1's, so make sure to invert these in that case.
-
+ß
 ### Loading Data
 
-Run ET_RemoveArtifacts_App.mlapp from the Matlab command window to start the application. To load the data, go to File -> Load data structure (see below).
+To run as a standalone desktop app, simply launch the app. Alternatively, you can run ET_RemoveArtifacts_App.mlapp from the Matlab command window if you have a new enough version of Matlab. To load the data, go to File -> Load data structure (see below).
 If the data has not yet been processed by ET-Remove-Artifacts, the program automatically applies the blink removal algorithm on the signal using default settings.
 If the data has previously been processed by ET-Remove-Artifacts (i.e., fields created by ET-Remove-Artifacts exist and are populated), the program will not apply blink removal and will simply display the existing outputs stored in the data structure.
 
