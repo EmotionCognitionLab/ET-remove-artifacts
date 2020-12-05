@@ -29,7 +29,7 @@ This tool is designed to help preprocess pupil signal from any eye-tracker (ET).
 
 ## Installation
 
-Download the installer that matches your operating system from the installers folder. Launch the downloaded installer and follow the installer instructions.
+Download the installer file that matches your operating system (from installers folder). Unzip the downloaded file, launch the installer, and follow the installer instructions.
 
 For developers who want access to the source code: 
 
