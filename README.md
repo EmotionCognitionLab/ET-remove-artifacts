@@ -27,7 +27,7 @@ This tool is designed to help preprocess pupil signal from any eye-tracker (ET).
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-## Dependencies:
+## Dependencies
 * Matlab (tested on 2019a and later)
 * Signal Processing Toolbox
 
