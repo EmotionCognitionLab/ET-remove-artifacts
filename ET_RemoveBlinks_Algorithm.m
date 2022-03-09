@@ -28,7 +28,7 @@ function S = ET_RemoveBlinks_Algorithm(S, varargin)
 % presses the pushbutton "Filter Blinks". This function can also be called
 % as a standalone function.
 %
-% Author: Ringo Huang (ringohua@usc.edu)
+% Author: Ringo Huang (ringohhuang@g.ucla.edu)
 
 %% Unpack arguments
 narginchk(1,2);
@@ -60,6 +60,7 @@ config = check_sub_field_and_assign_default(config, 'detect_invalid_samples');
 config = check_sub_field_and_assign_default(config, 'front_padding');
 config = check_sub_field_and_assign_default(config, 'rear_padding');
 config = check_sub_field_and_assign_default(config, 'merge_invalids_gap');
+config = check_sub_field_and_assign_default(config, 'invalid_threshold');
 
 % Interpolation Options:
 config = check_sub_field_and_assign_default(config, 'merge_artifacts_gap');
@@ -73,7 +74,6 @@ if ~isfield(config,'sub_nums') || isempty(config.sub_nums)
 else
     config.iterations = numel(config.sub_nums);     % run only user-specified sub_nums
 end
-
 
 for k=1:config.iterations
     sub_num = config.sub_nums(k);
@@ -92,12 +92,20 @@ for k=1:config.iterations
                 if islogical(S(sub_num).data.valid)
                     S(sub_num).data.valid = double(S(sub_num).data.valid);      % convert logical array to double for resample fn to work
                 end
-                valid = round(resample(S(sub_num).data.valid, S(sub_num).data.smp_timestamp,config.resample_rate*config.resample_multiplier,1,1));                 % resample valid; also, round binarizes the resampled "logical" array
+                valid_array = round(resample(S(sub_num).data.valid, S(sub_num).data.smp_timestamp,config.resample_rate*config.resample_multiplier,1,1));                 % resample valid; also, round binarizes the resampled "logical" array
                 
-                S(sub_num).resampled.valid = valid;
+                S(sub_num).resampled.valid = valid_array;
             else
                 % Not critical if "valid" is missing
+                
+                valid_array = ones(numel(S(sub_num).resampled.sample),1);
+                
             end
+            
+            % retrieve invalid threshold and add values above threshold to
+            % valid
+            invalid_thresh = mean(S(sub_num).resampled.sample) - 2*std(S(sub_num).resampled.sample);
+            valid_array = valid_array & (S(sub_num).resampled.sample > invalid_thresh);
         else
             error('Could not find "smp_timestamp" field.');
         end
@@ -105,18 +113,26 @@ for k=1:config.iterations
         error('Could not find "data" sub-field.');
     end
     
+    %% Detrend and smooth
+    %pupil_smoothed = detrend(pupil, 10);
+    %pupil_smoothed = smoothdata(pupil, 'movmedian', 'SmoothingFactor', .1);
+    
     %% Detect Blinks
     % Generate velocity profile using differentiator FIR filter
     
+     d = designfilt('differentiatorfir','FilterOrder',config.filter_order, ...
+         'PassbandFrequency',config.passband_freq,'StopbandFrequency',config.stopband_freq, ...
+         'SampleRate',config.resample_rate, 'PassbandWeight', 1, 'StopbandWeight', 4);
     
-    d = designfilt('differentiatorfir','FilterOrder',config.filter_order, ...
-        'PassbandFrequency',config.passband_freq,'StopbandFrequency',config.stopband_freq, ...
-        'SampleRate',config.resample_rate);
+    %d = designfilt('lowpassfir','PassbandFrequency',config.passband_freq,'StopbandFrequency',config.stopband_freq, 'SampleRate', config.resample_rate);
+    % implement an initial high-pass filtering step, then do
+    % differentiatorfir
     
     dt = timestamp(2)-timestamp(1);
     
     delay = mean(grpdelay(d));
     pupil_pad = [repmat(pupil(1),delay,1); pupil; repmat(pupil(end),delay,1)];      % add 2*delay number of samples of the first pupil_smoothed value to beginning
+    %pupil_pad = [repmat(pupil_smoothed(1),delay,1); pupil_smoothed; repmat(pupil_smoothed(end),delay,1)];      % add 2*delay number of samples of the first pupil_smoothed value to beginning
     
     vel = filter(d,pupil_pad)/dt;
         
@@ -230,9 +246,9 @@ for k=1:config.iterations
     %% Detect Invalids
     invalid_array = zeros(numel(pupil),1);      % initiate invalid_array as an array of zeros of same length as pupil array; will replace if "valid" is detected as part of the data structure
     
-    if isfield(S(sub_num).data, 'valid') && ~isempty(S(sub_num).data.valid)
-        
-        invalid_array = ~valid;
+    if config.detect_invalid_samples    
+        % retrieve invalid_array
+        invalid_array = ~valid_array;
         invalid_diff = diff([0; invalid_array; 0]);     % pad front and rear with a zero
         invalid_index.onset = find(invalid_diff == 1);
         invalid_index.offset = find(invalid_diff == -1) - 1;
@@ -299,8 +315,8 @@ for k=1:config.iterations
     %% interpolate - future changes - use "averages" around the timepoints instead of the single value for the timepoints
     for j=1:length(artifact_index.onset)
         if timestamp(artifact_index.offset(j))-timestamp(artifact_index.onset(j)) > config.max_artifact_duration
-            %don't do anything if interpolation region is greater than 5
-            %seconds
+            % handle when to-be-interpolated region is greater than
+            % config.max_artifact_duration
             switch config.max_artifact_treatment
                 case 'ignore'
                     % don't do anything this iteration
@@ -354,9 +370,6 @@ if ~isfield(config,sub_field_name) || isempty(config.(sub_field_name))
         case 'resample_rate'
             default_value = 120;
         case 'resample_multiplier'
-            if config.resample_multiplier <= 0
-                error('Resample Multiplier cannot be less than or equal to 0');
-            end
             default_value = 1;
         case 'detect_blinks'
             default_value = 1;      % enable detect blinks by default
@@ -394,6 +407,8 @@ if ~isfield(config,sub_field_name) || isempty(config.(sub_field_name))
             default_value = 0;
         case 'max_artifact_treatment'
             default_value = 'ignore';
+        case 'invalid_threshold'
+            default_value = 4;
     end
     config.(sub_field_name) = default_value;
 else
