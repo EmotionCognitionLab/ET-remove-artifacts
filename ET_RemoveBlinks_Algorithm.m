@@ -61,6 +61,8 @@ config = check_sub_field_and_assign_default(config, 'front_padding');
 config = check_sub_field_and_assign_default(config, 'rear_padding');
 config = check_sub_field_and_assign_default(config, 'merge_invalids_gap');
 config = check_sub_field_and_assign_default(config, 'invalid_threshold');
+config = check_sub_field_and_assign_default(config, 'valid_range_upper');
+config = check_sub_field_and_assign_default(config, 'valid_range_lower');
 
 % Interpolation Options:
 config = check_sub_field_and_assign_default(config, 'merge_artifacts_gap');
@@ -102,10 +104,14 @@ for k=1:config.iterations
                 
             end
             
-            % retrieve invalid threshold and add values above threshold to
-            % valid
-            invalid_thresh = mean(S(sub_num).resampled.sample) - 2*std(S(sub_num).resampled.sample);
-            valid_array = valid_array & (S(sub_num).resampled.sample > invalid_thresh);
+            % valid range is the user-specified percentage of the range of
+            % sample values (config.valid_range_upper is a fraction between
+            % 0 and 1)
+            resampled_range = range(S(sub_num).resampled.sample);
+            resampled_min = min(S(sub_num).resampled.sample);
+            valid_range_upper = config.valid_range_upper*resampled_range + resampled_min;
+            valid_range_lower = config.valid_range_lower*resampled_range + resampled_min;
+            valid_array = valid_array & (S(sub_num).resampled.sample > valid_range_lower) & (S(sub_num).resampled.sample < valid_range_upper);
         else
             error('Could not find "smp_timestamp" field.');
         end
@@ -409,6 +415,10 @@ if ~isfield(config,sub_field_name) || isempty(config.(sub_field_name))
             default_value = 'ignore';
         case 'invalid_threshold'
             default_value = 4;
+        case 'valid_range_upper'
+            default_value = 1;
+        case 'valid_range_lower'
+            default_value = .3;
     end
     config.(sub_field_name) = default_value;
 else
