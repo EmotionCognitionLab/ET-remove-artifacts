@@ -123,6 +123,28 @@ for k=1:config.iterations
     %pupil_smoothed = detrend(pupil, 10);
     %pupil_smoothed = smoothdata(pupil, 'movmedian', 'SmoothingFactor', .1);
     
+    %% add 1 valid temporary sample on either ends of the timeseries (padding):
+    % how much padding? (as a percentage of data)
+    pad_perc_of_data = .02;
+    % how much of the beginning and end are you taking the mean? (as a
+    % percentage of data)
+    mean_perc_of_data = .05;
+    
+    % how many samples for padding? how many samples for mean (must be
+    % integer)
+    pad_num = floor(numel(pupil)*pad_perc_of_data);
+    mean_num = floor(numel(pupil)*mean_perc_of_data);
+    
+    pupil_front = repmat(mean(pupil(1:mean_num),'omitnan'), pad_num,1);
+    pupil_back = repmat(mean(pupil(numel(pupil)-mean_num:end),'omitnan'), pad_num,1);
+    
+    ts_diff = timestamp(2) - timestamp(1);
+    ts_front = [timestamp(1) - ts_diff*pad_num:ts_diff:timestamp(1)-ts_diff]';
+    ts_back = [timestamp(end) + ts_diff:ts_diff:timestamp(end) + ts_diff*pad_num]';
+      
+    pupil = [pupil_front; pupil; pupil_back];
+    timestamp = [ts_front; timestamp; ts_back];
+    
     %% Detect Blinks
     % Generate velocity profile using differentiator FIR filter
     
@@ -357,6 +379,10 @@ for k=1:config.iterations
         vq = interp1(x,v,xq,'linear');
         pupil(t2:t3) = vq;
     end
+    
+    %% remove the 1 valid temporary sample on either ends of the timeseries (padding):
+    pupil = pupil(pad_num+1:end-pad_num);
+    timestamp = timestamp(pad_num+1:end-pad_num);
     
     %% Update Data structure S to be outputted
     S(sub_num).reconstructed.sample = pupil;
