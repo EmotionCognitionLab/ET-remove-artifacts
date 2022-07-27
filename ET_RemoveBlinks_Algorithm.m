@@ -300,7 +300,7 @@ for k=1:config.iterations
         % Fill in invalid gap durations less than user-specified
         invalid_index = merge_gaps(invalid_index, timestamp, config.merge_invalids_gap);
         
-        % Create invalid array (event if there's overlap of invalid regions
+        % Create invalid array (even if there's overlap of invalid regions
         % - due to padding - the way matlab assigns values to array gets
         % around it).
         invalid_array_indices = [];

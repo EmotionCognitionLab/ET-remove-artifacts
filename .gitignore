@@ -4,3 +4,14 @@ installers/.DS_Store
 testing.m
 algo_description.pdf
 algo_description.mlx
+releases/ET_RemoveArtifacts_App.prj
+releases/ET_RemoveArtifacts_App/for_redistribution/ET_windows_installer.exe
+releases/ET_RemoveArtifacts_App/for_redistribution_files_only/ET_RemoveArtifacts_App.exe
+releases/ET_RemoveArtifacts_App/for_redistribution_files_only/readme.txt
+releases/ET_RemoveArtifacts_App/for_redistribution_files_only/splash.png
+releases/ET_RemoveArtifacts_App/for_testing/ET_RemoveArtifacts_App.exe
+releases/ET_RemoveArtifacts_App/for_testing/mccExcludedFiles.log
+releases/ET_RemoveArtifacts_App/for_testing/readme.txt
+releases/ET_RemoveArtifacts_App/for_testing/requiredMCRProducts.txt
+releases/ET_RemoveArtifacts_App/for_testing/splash.png
+releases/ET_RemoveArtifacts_App/PackagingLog.html

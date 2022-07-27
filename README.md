@@ -32,12 +32,13 @@ This tool is designed to help preprocess pupil signal from any eye-tracker (ET).
 Two installation options:
 
 ### Standalone Program
-For the standalone desktop version of this app, visit the [latest release page](https://github.com/EmotionCognitionLab/ET-remove-artifacts/releases) and download the installer file that matches your operating system. Launch the installer on your local drive and follow the instructions to complete installation (note that you may need to manually give permission for the installer to run on your computer).
+For the standalone desktop version of this app, visit the [latest release page](https://github.com/EmotionCognitionLab/ET-remove-artifacts/releases) and download the installer file that matches your operating system. Launch the installer on your local drive and follow the instructions to complete installation.
 
 ### Source Code
 Dependencies:
 * Matlab (tested on 2019a and later)
 * Signal Processing Toolbox
+* Statistics and Machine Learning Toolbox
 
 You can download the source code if you want to use the algorithm in your own script or if you want to run the app directly through Matlab. Simply clone or download this repository, making sure that the .m and .mlapp files are located in the same directory.
 
