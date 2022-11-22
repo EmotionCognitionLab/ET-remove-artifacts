@@ -2,7 +2,7 @@
 
 This tool is designed to help preprocess pupil signal from any eye-tracker (ET). This tool includes an automatic blink removal algorithm and a manual plot editor.
 
-<img src="/docs/overview.png" alt="overview" width="600"/>
+<img src="/docs/overview.png" alt="overview" width="800"/>
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
