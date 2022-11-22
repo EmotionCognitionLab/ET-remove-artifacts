@@ -2,7 +2,12 @@
 
 This tool is designed to help preprocess pupil signal from any eye-tracker (ET). This tool includes an automatic blink removal algorithm and a manual plot editor.
 
+## Overview
 <img src="/docs/overview.png" alt="overview" width="800"/>
+
+The main feature of this program is to linearly interpolate over artifacts, as determined by detecting significant changes in the pupil velocity (top plot). The endpoints of these significant changes are marked with a pink dot (onset) and red dot (offset). These endpoints are mapped onto the raw pupil (gray plot in the bottom panel, only the blink events are not obscured). The program linearly interpolates across these endpoints and generates the "cleaned" pupil timeseries (green plot).
+
+Other features of this program are described below (WIP).
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
