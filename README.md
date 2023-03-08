@@ -5,172 +5,200 @@ This tool is designed to help preprocess pupil signal from any eye-tracker (ET).
 ## Overview
 <img src="/docs/overview.png" alt="overview" width="800"/>
 
-The main feature of this program is to linearly interpolate over artifacts, as determined by detecting significant changes in the pupil velocity (top plot). The endpoints of these significant changes are marked with a pink dot (onset) and red dot (offset). These endpoints are mapped onto the raw pupil (gray plot in the bottom panel, only the blink events are not obscured). The program linearly interpolates across these endpoints and generates the "cleaned" pupil timeseries (green plot).
+The main feature of this program is to linearly interpolate over artifacts, as determined by detecting significant changes in the pupil velocity (top plot). The endpoints of these changes in velocity are marked with a pink dot (onset) and red dot (offset). These endpoints are mapped onto the raw pupil (gray plot in the bottom panel, only the blink events are not obscured). The program linearly interpolates across these endpoints and generates the "cleaned" pupil timeseries (green plot).
 
 Other features of this program are described below (WIP).
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**
 
-- [Installation](#installation)
-- [Pupil Preprocessing - Overview](#pupil-preprocessing---getting-started)
+- [Installation (2 options)](#installation-2-options)
+- [Pupil Preprocessing Overview](#pupil-preprocessing-overview)
   - [Formatting the Input Data Structure](#formatting-the-input-data-structure)
   - [Loading Data](#loading-data)
-  - [Interacting with the GUI](#interacting-with-the-gui)
-  - [Removing Blinks and Artifacts (Automated)](#removing-blinks-and-artifacts-automated)
-    - [General Processing](#general-processing)
-    - [Detect Blinks](#detect-blinks)
-    - [Detect Invalid Samples](#detect-invalid-samples)
-    - [Interpolation Options](#interpolation-options)
-  - [Removing Blinks and Artifacts (Manual)](#removing-blinks-and-artifacts-manual)
-  - [Understanding the Data Structure Fields](#understanding-the-data-structure-fields)
+  - [The Pupil and Velocity Plots](#the-pupil-and-velocity-plots)
+- [Removing Blinks and Artifacts (Automated)](#removing-blinks-and-artifacts-automated)
+  - [General Preprocessing](#general-preprocessing)
+  - [Detect Blinks](#detect-blinks)
+  - [Detect Invalid Samples](#detect-invalid-samples)
+  - [Interpolation Options](#interpolation-options)
+  - [Example with High-Quality Pupil Recording](#example-with-high-quality-pupil-recording)
+  - [Example with Low-Quality Pupil Recording](#example-with-low-quality-pupil-recording)
+  - [Understanding the Output Data Structure](#understanding-the-output-data-structure)
   - [Using the Manual Plot Editor](#using-the-manual-plot-editor)
-    - [When do I replace data with NaNs rather than interpolate?](#when-do-i-replace-data-with-nans-rather-than-interpolate)
   - [Don't Forget to Save Your Work!](#dont-forget-to-save-your-work)
 - [How Does The Blink Removal Algorithm Work?](#how-does-the-blink-removal-algorithm-work)
 - [Disclaimer](#disclaimer)
+- [Crediting](#crediting)
 - [Author](#author)
 
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+## Installation (2 options)
+### 1) Standalone Program
+Use the standalone desktop program if you don't want to worry about dependencies and don't mind the large download size. Visit the [latest release page](https://github.com/EmotionCognitionLab/ET-remove-artifacts/releases) and download the installer file that matches your operating system. Launch the installer on your local drive and follow the instructions to complete installation.
 
-
-## Installation
-Two installation options:
-
-### Standalone Program
-For the standalone desktop version of this app, visit the [latest release page](https://github.com/EmotionCognitionLab/ET-remove-artifacts/releases) and download the installer file that matches your operating system. Launch the installer on your local drive and follow the instructions to complete installation.
-
-### Source Code
-Dependencies:
+### 2) Source Code
+Running from the source code may be easier, provided that you already have these dependencies:
 * Matlab (tested on 2019a and later)
 * Signal Processing Toolbox
 * Statistics and Machine Learning Toolbox
 
 You can download the source code if you want to use the algorithm in your own script or if you want to run the app directly through Matlab. Simply clone or download this repository, making sure that the .m and .mlapp files are located in the same directory.
 
-The project is written and tested on Matlab 2019a. The .mlapp file might not work with older Matlab versions due to use of uicomponents that were introduced in later Matlab versions. 
+The project is written and tested on Matlab 2019a. The .mlapp file might not work with older Matlab versions due to use of uicomponents that were introduced in later Matlab versions. If you have an older version of Matlab and/or don't want to deal with dependencies, it may be easier to install the standalone program.
 
-The repository also includes example .mat files that demonstrates how the input data structure should be formatted to work with ET-remove-artifacts.
-
-## Pupil Preprocessing - Overview
+## Pupil Preprocessing Overview
 
 ![Preprocessing Pipeline](/docs/preprocessing_pipeline.svg?raw=true)
 
-Raw pupil data from any eye-tracking system can be preprocessed using the ET-Remove-Artifacts application. First, the raw pupil timeseries needs to be read from your eye-tracking system's data file output and stored in a Matlab data structure. The format for the data structure is described in the next section.
+ET-Remove-Artifacts can be used on pupil timeseries data from *any* eye-tracker. But first, the raw data needs to be formatted as a Matlab data structure in a specific way (described in the next section). Once properly formatted, the pupil data can be loaded into the ET-Remove-Artifacts application. The app will automatically detect and linearly interpolate over blinks and other artifacts in your pupil timeseries. You can easily view the results of the blink removal algorithm in the app. If needed, you can also use the manual plot editor to interpolate over missed artifacts or
+impute longer sections of noisy data with missing data indicators (NaNs).
 
-Once the raw pupil data is formatted in a data structure, you can load the data into the ET-Remove-Artifacts application. This app includes an algorithm that detects and linearly interpolates over blinks and other artifacts. For atypical artifacts that remain undetected or improperly treated by the algorithm, the manual plot editor can be used to either fix interpolations or
-impute sections of the pupil signal with missing data indicators (NaNs).
+## Formatting the Input Data Structure
 
-### Formatting the Input Data Structure
+Your raw pupil data needs to be formatted as a Matlab data structure with the variable name `S`. The variable `S` then needs to be **saved as a .mat file.** 
 
-To use the ET-Remove-Artifacts app, your raw pupil data needs to be stored in a .mat file that contains a Matlab data structure with the variable name `S`. The data structure `S` must contain a field `data` with several required and optional sub-fields. The data structure may contain pupil data from multiple sessions, where each row contains data from a different session.
+At a minimum, the data structure `S` needs to include the following **required fields**:
+```
+S
+└── data
+    ├── sample
+    └── smp_timestamp
+```
+* **`S.data` (required)**: contains the raw pupil data
+* **`S.data.sample` (required)**: the raw pupil values stored as a Nx1 numerical array
+* **`S.data.smp_timestamp` (required)**: the sample timestamps (in seconds) stored as a Nx1 numerical array (timestamps must be converted to seconds!)
 
-* **data (required)**: the raw pupil data
-* **SubjectNumber (recommended)**: optional subject/session labels
-* **filter_config (optional)**: optional field used if you want to configure algorithm settings different from the default
-
-<img src="/docs/data_structure_1.png" alt="Input Data Structure" width="730">
-
-The `data` field contains the following sub-fields:
-
-* **sample (required)**: the raw pupil values stored as a Nx1 numerical array
-* **smp_timestamp (required)**: the sample timestamps stored as a Nx1 numerical array
-* **valid (optional)**: the valid/invalid sample tag provided by some eye-trackers stored as a Nx1 logical array (1 = valid, 0 = invalid)
-* **message (optional)**: any task event label relevant to the session
-* **msg_timestamp (optional)**: the timestamps corresponding to the event labels in "messages"
-
-<img src="/docs/data_structure_2.png" alt="Data Structure data sub-field" width="700">
+Additionally, the data structure `S` may also include these **optional fields**:
+```
+S
+├── data (required)
+│   ├── sample (required)
+│   ├── smp_timestamp (required)
+│   ├── valid (optional)
+│   ├── message (optional)
+│   └── msg_timestamp (optional)
+└── filter_config (optional)
+```
+* **`S.data.valid` (optional)**: the valid/invalid sample tag provided by some eye-trackers stored as a Nx1 logical array (1 = valid, 0 = invalid)
+* **`S.data.message` (optional)**: any task event label relevant to the session
+* **`S.data.msg_timestamp` (optional)**: the timestamps corresponding to the event labels in `S.data.message`
+* **`S.filter_config` (optional)**: optional field that stores the configuration settings for the blink removal algorithm
 
 After creating your data structure, save it as a .mat file (e.g., `save('name_of_file.mat','S')`).
 
-For an example script that creates the data structure `S` from an eye-tracker's raw data file, take a look at the ET_ReadFile.m function and ReadRawData_Script.m in the RawData2Structure directory (example data from an SMI eye-tracker).
+### Data Formatting Notes:
+* The `smp_timestamp` values need to be in **seconds**. If your raw data timestamps are in a different unit (e.g., Eyelink uses ms), they need to be converted to seconds. 
+* The arrays in the `sample`, `smp_timestamp`, and `valid` sub-fields need to be the same size (Nx1 where N is the number of samples). 
+* The `valid` sub-field should be an array of 1's and 0's, where 1's indicate the sample is valid. Some eye-trackers record *invalid* samples as 1's, so make sure to invert these in that case.
 
-**Important Notes**: The `smp_timestamp` values need to be in units of seconds. The arrays in the `sample`, `smp_timestamp`, and `valid` sub-fields need to be the same size.
-The `valid` sub-field should be an array of 1's and 0's, where 1's indicate the sample is valid. Some eye-trackers record *invalid* samples as 1's, so make sure to invert these in that case.
+### Data Formatting Examples
+(TODO: update this section)
 
+The provided example scripts can be used as templates for formatting your eye-tracking data.
+
+**ReadRawData_Script.m** is an example script showing how to read in raw data (using the included **ET_ReadFile.m** function) and format the data structure `S` to be compatible with ET-Remove-Artifacts. To view an example of a properly formatted data structure, load the provided **Example_Data_Input.mat** file (example data from an SMI eye-tracker). This file was created from the raw data files and code provided in the **RawData2Structure** folder.
+
+## Using the ET Remove Artifacts App
 ### Loading Data
-
-To run as a standalone desktop app, simply launch the app. Alternatively, you can run ET_RemoveArtifacts_App.mlapp from the Matlab command window if you have a new enough version of Matlab. To load the data, go to File -> Load data structure (see below).
-If the data has not yet been processed by ET-Remove-Artifacts, the program automatically applies the blink removal algorithm on the signal using default settings.
-If the data has previously been processed by ET-Remove-Artifacts (i.e., fields created by ET-Remove-Artifacts exist and are populated), the program will not apply blink removal and will simply display the existing outputs stored in the data structure.
+If running the standalone desktop app, simply launch the app like a normal desktop program. If using the source code, simply run the ET_RemoveArtifacts_App.mlapp (e.g., drag and drop the file into your Matlab command window). Once the app opens, you can load your .mat file from `File -> Load data structure` (see below).
 
 <img src="/docs/load_data.gif" alt="Load Data" width="1000">
 
-### Using the Artifact Removal Algorithm (With Default Settings)
+### The Artifact Removal Algorithm (With Default Settings)
 
-When you load in your data for the first time, the program will automatically apply the artifact removal algorithm with the default settings. 
+Upon loading your data, the app detects if the file was previously processed by ET-Remove-Artifacts. If so, the program will *not* modify the data and will simply display your existing preprocessed pupil results. Otherwise, the program automatically applies the artifact removal algorithm using the default settings.
 
-### Interacting with the GUI
+### The Pupil and Velocity Plots
 
-The output data (red) is displayed in the "Pupil Plot" axes and is overlayed on the original pupil data (green). You can toggle the buttons in the "Display Plots" panel to view and hide the plots and blink onset/offset points.
-To interact with the plot, hover over the axes and plot tools (Zoom-in, Zoom-out, Pan) will appear on top right of the axes.
-Click "Back" and "Next" to navigate through the other pupil datasets stored in your data structure. The "Index" box displays the index of your data structure that is currently being displayed.
+By default, the **Pupil Plot** displays the preprocessed **Output** timeseries (Green) overlaid on the **Original** timeseries (Gray). The **Blink Onset** (Pink) and **Blink Offset** (Red) are the start and end points of artifacts detected by the algorithm. The **Velocity Plot** displays the *velocity* or temporal first derivative of the original pupil timeseries. **Blink Onset** and **Blink Offset** are also plotted on the Velocity Plot. To interact with the plots, hover over the axes to reveal plot tools, which you can use to zoom and pan.
 
-### Removing Blinks and Artifacts (Automated)
+(show an example plot)
 
-This algorithm contains two possible methods of detecting artifacts that can be used either separately or together. We will go through each panel of the algorithm options here:
+Click the up or down arrow next to the **Index** field to navigate through the other pupil datasets stored in your data structure. The index refers to the index of the data structure `S` that is currently being displayed.
 
-#### General Preprocessing
+## Removing Blinks and Artifacts (Automated)
 
-These should be adjusted before the options in the other panels.
+Although the default settings for the blink removal algorithm *should work for most pupil recordings*, ET-Remove-Artifacts comes with some algorithm options that you can adjust to fine tune your results. We will describe all the algorithm options in the following sections, but you will likely only need to adjust a few of the settings.
 
-* Resampling Rate: typically, set this as the sampling rate of your eye-tracker
-* Resampling Multiplier: the multiplier affects the temporary sampling rate of the data passed into the algorithm.
-The program resamples the data to the Resampling Rate*Multiplier and runs the algorithm on the temporarily resampled data. The data will then be resampled back to the original Resampling Rate.
-For eye-trackers with a very high sampling rate (e.g., > 500 Hz), downsampling your data for the algorithm would help speed up computing time. In general, downsampling to about 200 Hz would be a good amount.
-For example, if your Resampling Rate is set at 1000 Hz, you can set your Resampling Multiplier is 0.2 to get a temporary sampling rate of 200 Hz when running the algorithm.
+### General Preprocessing
 
-#### Detect Blinks
+These should be adjusted *before* you adjust the options in the other panels. Unless your eye-tracker's sampling rate is very high and you're encountering slow performance, you can typically leave Resampling Multiplier set at 1.
 
-Select this panel to detect blinks in the pupil signal.
+* **Resampling Rate**: the sampling rate (in Hz) of your preprocessed data. Typically, you would set this as the sampling rate of the recording from your eye-tracker. However, you can also use this to down/up-sample your data if you desire (if you're file size is too large to handle, you may want to downsample).
+* **Resampling Multiplier**: the multiplier (value between 0 and 1) affects the temporary sampling rate of the data passed into the algorithm. The program resamples the data to the Resampling Rate*Multiplier and runs the algorithm on the temporarily resampled data. The data will then be resampled back to the original Resampling Rate. For eye-trackers with a very high sampling rate (e.g., > 500 Hz), downsampling your data for the algorithm would help speed up computing time. For example, if your Resampling Rate is set at 1000 Hz, you can set your Resampling Multiplier is 0.2 to get a temporary sampling rate of 200 Hz when running the algorithm.
 
-* Filter Order: Must be a even number. Larger values create a "smoother" velocity plot, but may suppress the blink velocity patterns if it is too large.
-* Passband Frequency (Hz): Filter allows frequencies less than this value to pass.
-* Stopband Frequency (Hz): Filter does not allow frequencies greater than this value to pass.
-* Peak Threshold Factor: Thresholding of a peak's amplitude in standard deviations above the mean velocity. Peaks whose amplitudes exceed this threshold are classified as an artifact peak.
-* Trough Threshold Factor: Thresholding of a troughs's amplitude in standard deviations below the mean velocity. Troughs whose amplitudes exceed this threshold are classified as an artifact trough. A "blink" is characterized as an artifact trough followed soon after by an artifact peak.
-* Velocity Threshold (+): Thresholding to find the point along the artifact peaks used to identify blink offsets. Smaller positive thresholds delays the blink offset, increasing the tail end of the interpolated region (and vice versa).
-* Velocity Threshold (-): Thresholding to find the point along the artifact troughs used to identify blink onsets. Smaller positive thresholds makes the blink onset occur earlier, increasing the front end of the interpolated region (and vice versa).
+### Detect Blinks
 
-(WIP - Figure of a blink profile to describe the thresholds)
+Select the checkbox next to this panel to detect blinks in the pupil signal.
 
-### More Info
-Unfortunately, the rest of this documentation is a bit outdated. I will get to it eventually...
+* **Filter Order (must be an even integer)**: By default, the Filter Order is set at 20% of the Resampling Rate. Larger Filter Order values create a "smoother" velocity plot, but may suppress the blink velocity patterns if it is too large.
+* **Passband Frequency (Hz)**: Lower frequency constraint of the bandpass filter.
+* **Stopband Frequency (Hz)**: Upper frequency constraint of the bandpass filter.
+* **Peak Threshold Factor**: Thresholding of a peak's amplitude in standard deviations above the mean velocity. Peaks whose amplitudes exceed this threshold are classified as an artifact peak.
+* **Trough Threshold Factor**: Thresholding of a troughs's amplitude in standard deviations below the mean velocity. Troughs whose amplitudes exceed this threshold are classified as an artifact trough. A "blink" is characterized as an artifact trough followed soon after by an artifact peak.
+* **Velocity Threshold (+)**: Thresholding to find the point along the artifact peaks used to identify blink offsets. Smaller positive thresholds delays the blink offset, increasing the tail end of the interpolated region (and vice versa).
+* **Velocity Threshold (-)**: Thresholding to find the point along the artifact troughs used to identify blink onsets. Smaller positive thresholds makes the blink onset occur earlier, increasing the front end of the interpolated region (and vice versa).
 
-For an additional reference, please see this excellent write-up documenting the entire preprocessing procedure from Isaac Menchaca: https://isaacmenchaca.github.io/2020/04/12/PupillometryPreprocessing.html
+The velocity plot (i.e., 1st derivative of the raw pupil data) is created by applying a [differentiator filter](https://www.mathworks.com/help/signal/ug/take-derivatives-of-a-signal.html). The first 3 options (**Filter Order, Passband Frequency, and Stopband Frequency**) control the design of the filter used when taking the 1st derivative of the raw pupil signal.
 
+The algorithm then detects peaks and troughs in the velocity plot. Peaks and troughs whose amplitude exceed the **Peak Threshold Factor** and **Trough Threshold Factor**, respectively, are identified as artifacts. 
 
-#### Detect Invalid Samples
+Finally, the **Velocity Threshold (+)** and **Velocity Threshold (-)** options fine-tune the placement of the endpoints around each of the identified artifactual peak-trough periods.
 
-#### Interpolation Options
+(TODO - Figure of a blink profile to describe the thresholds)
 
-### Removing Blinks and Artifacts (Manual)
+### Detect Invalid Samples
 
-### Understanding the Output Data structure
+Some eye-trackers also tag whether or not each recorded sample is valid, or provides a confidence metric for the sample quality. This information can be used in conjunction with the blink detection algorithm.
 
+* **Front Padding (s)**: Padding prior to the onset of invalid periods 
+* **Rear Padding (s)**: Padding after the offset of invalid periods 
+* **Merge Invalids Gap (s)**: If two invalid periods fall within this value, the entire period between the two invalid periods are merged into one invalid period
+* **Valid Range Upper (0-1)**: Samples above this value (fraction of the range of pupil values in this recording) are tagged as "invalid samples"
+* **Valid Range Lower (0-1)**: Samples below this value (fraction of the range of pupil values in this recording) are tagged as "invalid samples" (e.g., if this is set at .3, any sample with a value below .3 of the pupil range is an "invalid sample")
+
+The **Front Padding** and **Rear Padding** options control the amount of padding around invalid periods that the program will interpolate over.
+
+The artifacts identified by the blink detection and invalid detection portions of the algorithm are merged so that any overlap is treated as the same artifact.
+
+### Interpolation Options
+* **Merge Artifacts Gap (s)**: If two *artifacts* (could be a blink or invalid period)fall within this value, the entire period between the two artifacts are merged into one artifacts
+* **Max Artifact Duration (s)**: If an artifact exceeds this value, the program will either **Ignore**, **Interpolate**, or **NaN Impute** across this artifact (depending on the option that you select). Ignoring simply leaves the artifact alone and the raw pupil data is preserved. Interpolate linearly interpolates over the artifact. NaN impute replaces this artifact with NaNs.
+
+### Example with High-Quality Pupil Recording
+Let's take a look at how the program handles pupil data recorded at 500Hz from an EyeLink eye-tracker (eyelink_example.mat). With the default options, the algorithm does a decent job of cleaning up most of the blink artifacts.
+
+![EyeLink Default Options](/docs/eyelink_default.png?raw=true)
+
+However, a few blink events were missed (e.g., at 1300s). Zooming into the the velocity plot around 1300s, we see that the reason for this miss is that there are two separate onset/offset pairs (so the blink is being treated as two successive blink events).
+
+![EyeLink Zoomed into Velocity Plot](/docs/eyelink_velocity_zoomed.png?raw=true)
+
+This can be handled several ways. The easiest in this case is to just add a small duration to the **Merge Artifacts Gap (s)** field. For example, setting it at 0.1s tells the algorithm to merge any two artifacts that are separated by less than 0.1s.
+
+![EyeLink Output After Applying Merge Artifacts Gap](/docs/eyelink_merge_artifacts_output.png?raw=true)
+
+This results in an output (Green Line) that interpolates over every single blink artifact in the recording.
+
+### Example with Low-Quality Pupil Recording
+Recordings from some eye-tracking systems may yield atypical blink patterns. Let's take a look Example_Data_Input.m, which contains recordings from a 120Hz SMI eye-tracker, to see how the algorithm handles atypical blinks.
+
+For example, zooming into a section of the raw pupil data, it's clearly difficult to provide a single set of properties that describes the all the blink events. Each blink event has a series of noisy, rapid fluctuations and even includes some spikes.
+
+![SMI Pupil Plot Example](/docs/smi_pupil_plot.png?raw=true)
+
+It's also difficult to qualitatively describe what the blink profiles look like in the corresponding velocity plot.
+
+![SMI Velocity Plot Example](/docs/smi_velocity_plot.png?raw=true)
+
+Applying the default options, we can see that the algorithm still does a decent job identifying the onset and offset (Pink and Red Dots, respectively) of each blink event. It is still able to yield an output (Green Line) that interpolates across the atypical blink events, with all their noise and spikes.
+
+![SMI Output Results Example](/docs/smi_output.png?raw=true)
+
+As seen in this example, the algorithm is not constrained to identifying typical blinks, and is fairly robust at handling all sorts of artifact patterns.
+
+### Understanding the Output Data Structure
 
 <img src="/docs/data_structure_3.png" alt="Output Data Structure" width="1000">
-
-* Hann Window Points: this is the length (number of points) in the Hann window applied to your pupil data before generating the velocity plot. If your pupil signal is particularly noisy, you may increase this value to get a smoother velocity plot; if the magnitude of the blink signatures in your velocity plot (i.e., the sudden dip and peak) is too small, consider decreasing this value.
-
-* Precision: successive blinks may be grouped together. Precision refers to the duration between the offset of one blink and the onset of the next blink that would group the two blinks as one. I recommend leaving this at 0.
-
-For most cases, set your resampling rate equal to the sampling rate of your eye-tracker. The setting that I change most frequently is the *Hann Window Points*. Pupil signals with relatively large non-blink fluctuations will need a larger Hann window to generate a smoother velocity plot. I usually start with a lower value and increase the value until I see that increasing the value no longer improves the reconstructed plot meaningfully (this is subjective). I often also decrease the Velocity Thresholds (+ and -), which creates a slightly larger interpolation region. One important rule of thumb is that, for a given study run on the same eye-tracker, try to make your settings approximately similar. For instance, if you load in the Example_Data_Output.mat into the GUI, you'll notice how the Hann Window Points values fall in the 30-40 point range (on data from another one of my eye-trackers, I set this parameter between 10 and 20).
-
-Let's take a look at an example! Load *Example_Data_Input.mat* into your GUI. This is the reconstructed plot looks like using the default algorithm parameters:
-
-![GUI Input Data](/docs/input_parameters_gui.PNG?raw=true)
-
-
-Load *Example_Data_Output.mat* into your GUI. This is the reconstructed plot (looks much better qualitatively) after changing the algorithm parameters:
-
-![GUI Output Data](/docs/output_parameters_gui.PNG?raw=true)
-
-
-Notice that in the above example, the only paramter I changed was the Hann Window Points. In this case, this was all that was needed to get a qualitatively better-looking reconstructed plot. However, there are still some blemishes in the signal, which we'll handle manually in the Plot Editor (covered in next section).
-
-You may want to change the default settings of the algorithm parameters; for example, if you're using an eye-tracker with a different sampling rate. To change the default settings, open the ET_RemoveArtifacts_Auto.m file and under the unpack arguments section, change the current default value to your desired default value.
 
 ### Using the Manual Plot Editor
 
@@ -218,7 +246,7 @@ Load Example_Data_Final.mat to see what the final cleaned pupil data looks like 
 #### When do I replace data with NaNs rather than interpolate?
 Here, I replace that messy regions that are longer than 2-seconds with NaNs rather than interpolate. Later on in my analysis, I'll set criteria for trial exclusions based on the NaNs in the data. An example of this criteria may be: if the missing data occurs during a critical period of interest, exclude the trial. Or, if more than 50% of the pupil data in the trial is NaNs, exclude the trial.
 
-Ultimately, defining the cut-off between interpolating and replacing with NaNs depends on your study design. Are your stimuli events long or short? What is the typical duration of the pupillary response you're interested in? The shorter the duration, the more stringent you're criteria for replacing data with NaNs. Typically, if I am unsure of whether to replace with NaNs or interpolate, I err on the side of replacing with NaNs.
+Ultimately, defining the cut-off between interpolating and replacing with NaNs depends on your study design. Are your stimuli events long or short? What is the typical duration of the pupillary response you're interested in? The shorter the duration, the more stringent you're criteria for replacing data with NaNs. Typically, if I am unsure of whether to replace with NaNs or interpolate, I err  on the side of replacing with NaNs.
 
 ### Don't Forget to Save Your Work!
 
@@ -232,13 +260,23 @@ For typical behavioral studies, the acquired pupillometry data is a slowly varyi
 
 Steps:
    1. Resample data
-   2. Generate velocity profile - first smooth the data using a hanning window
-   3. Detect blink onsets/offsets by identifying intersections between velocity profile and negative/positive threshold
-   4. Interpolate over blink onset/offset pairs
+   2. Generate velocity profile by taking a filtered derivative of the raw pupil data
+   3. Detect blink onsets/offsets by identifying peaks and troughs in the velocity profile
+   4. Interpolate over blink onset/offset end points
+
+## More Info
+
+For an additional reference, please see this excellent write-up documenting the entire preprocessing procedure from Isaac Menchaca: https://isaacmenchaca.github.io/2020/04/12/PupillometryPreprocessing.html
 
 ## Disclaimer
 
 The tools in this repository and the preprocessing steps described above are designed with my own projects in mind. The guidelines expressed above should be taken as suggestions based on my own experiences and are *not* standardized rules for pupillometry preprocessing.
+
+## Crediting
+
+If using the toolbox as part of your pupil preprocessing pipeline, please consider citing the following [reference](https://doi.org/10.1016/j.neuroimage.2020.116560):
+
+Mather, M., Huang, R., Clewett, D., Nielsen, S. E., Velasco, R., Tu, K., Han, S., & Kennedy, B. L. (2020). Isometric exercise facilitates attention to salient events in women via the noradrenergic system. Neuroimage, 210, 116560.
 
 ## Author
 
