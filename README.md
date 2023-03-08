@@ -161,7 +161,7 @@ The **Front Padding** and **Rear Padding** options control the amount of padding
 The artifacts identified by the blink detection and invalid detection portions of the algorithm are merged so that any overlap is treated as the same artifact.
 
 ### Interpolation Options
-* **Merge Artifacts Gap (s)**: If two *artifacts* (could be a blink or invalid period)fall within this value, the entire period between the two artifacts are merged into one artifacts
+* **Merge Artifacts Gap (s)**: If two *artifacts* (could be a blink or invalid period) fall within this value, the entire period between the two artifacts are merged into one artifacts
 * **Max Artifact Duration (s)**: If an artifact exceeds this value, the program will either **Ignore**, **Interpolate**, or **NaN Impute** across this artifact (depending on the option that you select). Ignoring simply leaves the artifact alone and the raw pupil data is preserved. Interpolate linearly interpolates over the artifact. NaN impute replaces this artifact with NaNs.
 
 ### Example with High-Quality Pupil Recording
