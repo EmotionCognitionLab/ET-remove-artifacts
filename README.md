@@ -14,6 +14,7 @@ Other features of this program are described below (WIP).
 - [Installation (2 options)](#installation-2-options)
 - [Pupil Preprocessing Overview](#pupil-preprocessing-overview)
   - [Formatting the Input Data Structure](#formatting-the-input-data-structure)
+  - [Launching the Program](#launching-the-program)
   - [Loading Data](#loading-data)
   - [The Pupil and Velocity Plots](#the-pupil-and-velocity-plots)
 - [Removing Blinks and Artifacts (Automated)](#removing-blinks-and-artifacts-automated)
@@ -91,15 +92,20 @@ After creating your data structure, save it as a .mat file (e.g., `save('name_of
 * The `valid` sub-field should be an array of 1's and 0's, where 1's indicate the sample is valid. Some eye-trackers record *invalid* samples as 1's, so make sure to invert these in that case.
 
 ### Data Formatting Examples
-(TODO: update this section)
+(TODO: add scripts for other eye-tracking formats)
 
 The provided example scripts can be used as templates for formatting your eye-tracking data.
 
 **ReadRawData_Script.m** is an example script showing how to read in raw data (using the included **ET_ReadFile.m** function) and format the data structure `S` to be compatible with ET-Remove-Artifacts. To view an example of a properly formatted data structure, load the provided **Example_Data_Input.mat** file (example data from an SMI eye-tracker). This file was created from the raw data files and code provided in the **RawData2Structure** folder.
 
 ## Using the ET Remove Artifacts App
+### Launching the Program
+If running the standalone desktop app, simply launch the app like a normal desktop program. 
+
+If using the source code, simply run the ET_RemoveArtifacts_App.mlapp (e.g., drag and drop the file into your Matlab command window). 
+
 ### Loading Data
-If running the standalone desktop app, simply launch the app like a normal desktop program. If using the source code, simply run the ET_RemoveArtifacts_App.mlapp (e.g., drag and drop the file into your Matlab command window). Once the app opens, you can load your .mat file from `File -> Load data structure` (see below).
+Once the app opens, you can load your .mat file from `File -> Load data structure`. Then select and open your .mat file (see below).
 
 <img src="/docs/load_data.gif" alt="Load Data" width="1000">
 
